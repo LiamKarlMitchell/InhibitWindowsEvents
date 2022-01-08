@@ -15,8 +15,7 @@
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
 [![Website][website-shield]][website-url]
-[![Download Laps](download-shield)](download-url)
-
+[![Download](download-shield)][download-url]
 
 
 <!-- PROJECT LOGO -->
