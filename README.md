@@ -15,6 +15,8 @@
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
 [![Website][website-shield]][website-url]
+[![Download Laps](download-shield)](download-url)
+
 
 
 <!-- PROJECT LOGO -->
@@ -217,3 +219,5 @@ My partner who at one point in time did not have a gaming mouse and wanted Left 
 [product-screenshot]: images/screenshot.png
 [website-shield]: https://img.shields.io/badge/Website-brightgreen?style=for-the-badge
 [website-url]: https://racode.nz/inhibit-windows-events/
+[download-shield]: https://img.shields.io/badge/download-InhibitWindowsEvents.exe-blue?style=for-the-badge
+[download-url]: https://github.com/LiamKarlMitchell/InhibitWindowsEvents/releases/latest/download/InhibitWindowsEvents.exe
