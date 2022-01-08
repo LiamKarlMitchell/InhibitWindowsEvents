@@ -1,12 +1,5 @@
 <div id="top"></div>
 <!-- PROJECT SHIELDS -->
-<!--
-*** I'm using markdown "reference style" links for readability.
-*** Reference links are enclosed in brackets [ ] instead of parentheses ( ).
-*** See the bottom of this document for the declaration of the reference variables
-*** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
-*** https://www.markdownguide.org/basic-syntax/#reference-style-links
--->
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
@@ -75,6 +68,7 @@ I checked this behaviour again on 2022/01/08 and saw that Discord still does not
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
+<!-- BUILT WITH -->
 ### Built With
 
 * Visual Studio
@@ -84,14 +78,11 @@ I checked this behaviour again on 2022/01/08 and saw that Discord still does not
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
-
 <!-- USAGE EXAMPLES -->
 ### Usage
 
 Suppressed actions are:
-- Mouse extra buttons (Back and Forward in browser) Mouse 3 Mouse 4 etc.
+- Mouse extra buttons such as Back and Forward in browser, Mouse 3 Mouse 4 etc.
 - Left Windows Key
 - ALT + Scroll Lock toggles the hooks so this combination and is also suppressed.
 
