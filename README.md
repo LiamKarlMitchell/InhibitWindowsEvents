@@ -1,12 +1,4 @@
 <div id="top"></div>
-<!-- PROJECT SHIELDS -->
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
-
 
 <!-- PROJECT SHIELDS -->
 <!--
@@ -22,22 +14,6 @@
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
-
-<!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/othneildrew/Best-README-Template.svg?style=for-the-badge
-[contributors-url]: https://github.com/othneildrew/Best-README-Template/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/othneildrew/Best-README-Template.svg?style=for-the-badge
-[forks-url]: https://github.com/othneildrew/Best-README-Template/network/members
-[stars-shield]: https://img.shields.io/github/stars/othneildrew/Best-README-Template.svg?style=for-the-badge
-[stars-url]: https://github.com/othneildrew/Best-README-Template/stargazers
-[issues-shield]: https://img.shields.io/github/issues/othneildrew/Best-README-Template.svg?style=for-the-badge
-[issues-url]: https://github.com/othneildrew/Best-README-Template/issues
-[license-shield]: https://img.shields.io/github/license/othneildrew/Best-README-Template.svg?style=for-the-badge
-[license-url]: https://github.com/othneildrew/Best-README-Template/blob/master/LICENSE.txt
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/othneildrew
-[product-screenshot]: images/screenshot.png
 
 
 <!-- PROJECT LOGO -->
@@ -58,6 +34,8 @@
     <a href="https://github.com/LiamKarlMitchell/InhibitWindowsEvents/issues">Request Feature</a>
   </p>
 </div>
+
+
 
 <!-- TABLE OF CONTENTS -->
 <details>
@@ -86,6 +64,8 @@
   </ol>
 </details>
 
+
+
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
@@ -101,6 +81,8 @@ I checked this behaviour again on 2022/01/08 and saw that Discord still does not
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
+
+
 <!-- BUILT WITH -->
 ### Built With
 
@@ -108,8 +90,12 @@ I checked this behaviour again on 2022/01/08 and saw that Discord still does not
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
+
+
 <!-- GETTING STARTED -->
 ## Getting Started
+
+
 
 <!-- USAGE EXAMPLES -->
 ### Usage
@@ -121,17 +107,23 @@ Suppressed actions are:
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
+
+
 ### Prerequisites
 
 Windows 7 +
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
+
+
 ### Installation
 
 Just compile and run or download the release.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
+
+
 
 <!-- ROADMAP -->
 ## Roadmap
@@ -142,6 +134,8 @@ Just compile and run or download the release.
 See the [open issues](https://github.com/LiamKarlMitchell/InhibitWindowsEvents/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#top">back to top</a>)</p>
+
+
 
 <!-- CONTRIBUTING -->
 ## Contributing
@@ -159,12 +153,16 @@ Don't forget to give the project a star! Thanks again!
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
+
+
 <!-- LICENSE -->
 ## License
 
 Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
+
+
 
 <!-- DISCLAIMER -->
 ## Disclaimer
@@ -175,6 +173,7 @@ I take NO responsibility and/or liability for how you choose to use any of the s
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 
+
 <!-- CONTACT -->
 ## Contact
 
@@ -183,6 +182,7 @@ Liam Mitchell - liamkarlmitchell@gmail.com
 Project Link: [https://github.com/LiamKarlMitchell/InhibitWindowsEvents](https://github.com/LiamKarlMitchell/InhibitWindowsEvents)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
+
 
 
 <!-- ACKNOWLEDGMENTS -->
@@ -196,6 +196,7 @@ My partner who at one point in time did not have a gaming mouse and wanted Left 
 
 
 <p align="right">(<a href="#top">back to top</a>)</p>
+
 
 
 <!-- MARKDOWN LINKS & IMAGES -->
