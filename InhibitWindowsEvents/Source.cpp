@@ -162,7 +162,7 @@ WinMain(HINSTANCE hInstance,      // handle to current instance
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		Sleep(0);
+		Sleep(1);
 	}
 
 	puts("Exiting.");
