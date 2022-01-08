@@ -14,6 +14,7 @@
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
+[![Website][website-shield]][website-url]
 
 
 <!-- PROJECT LOGO -->
@@ -69,7 +70,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]](https://racode.nz/InhibitWindowsEvents)
+[![Product Name Screen Shot][product-screenshot]](https://racode.nz/inhibit-windows-events/)
 
 Prevent Mouse key Back/Forward and Windows Key so you can use them for Push to Talk keys in Discord and other apps.
 
@@ -214,3 +215,5 @@ My partner who at one point in time did not have a gaming mouse and wanted Left 
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/in/liam-mitchell-84b0053b/
 [product-screenshot]: images/screenshot.png
+[website-shield]: https://img.shields.io/badge/Website-brightgreen?style=for-the-badge
+[website-url]: https://racode.nz/inhibit-windows-events/
