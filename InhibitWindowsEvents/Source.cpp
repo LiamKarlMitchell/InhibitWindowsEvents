@@ -79,8 +79,25 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
 		if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
 			l |= 0xC0000000;
 
+		// For debugging purposes.
+#ifdef _DEBUG
+		printf("wParam: %X VK: %X Scan: %X L: %X\n", wParam, w, w, l);
+#endif
+
 		// Suppressing left windows key.
 		if (w == VK_LWIN && EnableHooks) {
+			switch (wParam) {
+				case WM_KEYDOWN: // use KEYDOWN
+				case WM_SYSKEYDOWN: { // use SYSKEYDOWN	
+					keybd_event(VK_F24, VK_F24, KEYEVENTF_EXTENDEDKEY | 0, 0);
+					break;
+				}
+				case WM_KEYUP: // use regular keyup
+				{
+					keybd_event(VK_F24, VK_F24, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+					break;
+				}
+			}
 			return 1;
 		}
 		// Detect Alt+Scroll Lock Up.
@@ -162,7 +179,7 @@ WinMain(HINSTANCE hInstance,      // handle to current instance
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		Sleep(1);
+		Sleep(0);
 	}
 
 	puts("Exiting.");
