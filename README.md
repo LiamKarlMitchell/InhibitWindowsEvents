@@ -26,7 +26,7 @@
   <h3 align="center">Inhibit Windows Events</h3>
 
   <p align="center">
-    An awesome README template to jumpstart your projects!
+    Prevent Browser Back and Forward and Windows Key when using for Push to Talk.
     <br />
     <br />
     <a href="https://github.com/LiamKarlMitchell/InhibitWindowsEvents/issues">Report Bug</a>
