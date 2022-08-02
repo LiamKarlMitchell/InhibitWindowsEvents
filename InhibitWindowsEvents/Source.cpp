@@ -2,6 +2,10 @@
 #include <windows.h>
 #include <stdio.h>
 
+#include "resource.h"
+
+using namespace std;
+
 HHOOK llMouseHook = NULL;
 HHOOK llKeyboardHook = NULL;
 bool EnableHooks = true;
@@ -169,17 +173,13 @@ WinMain(HINSTANCE hInstance,      // handle to current instance
 	llMouseHook = SetWindowsHookEx(WH_MOUSE_LL, LowLevelMouseProc, hInstance, 0);
 	llKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, hInstance, 0);
 
-	MSG msg;
-	msg.message = NULL; // Just in case msg is not 0'd out by default.
-
 	// This is the message pump loop.
 	// Needed or the system will go very unresponsive.
-	while (msg.message != WM_QUIT) { //while we do not close our application
-		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-		Sleep(0);
+	MSG msg;
+	while (GetMessage(&msg, NULL, 0, 0))
+	{
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
 	}
 
 	puts("Exiting.");
