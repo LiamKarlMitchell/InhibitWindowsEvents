@@ -1,0 +1,437 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Migrate Windows Hook Implementation to Rust",
+        "description": "Port the existing C++ Windows hooks functionality from Source.cpp to Rust using the windows crate",
+        "details": "Port the C++ implementation in InhibitWindowsEvents/Source.cpp to Rust using the windows-rs crate (0.52+). Implement low-level mouse and keyboard hooks using SetWindowsHookExA/W, WH_MOUSE_LL, and WH_KEYBOARD_LL. Handle WM_XBUTTONUP/DOWN for mouse buttons 3,4 and VK_LWIN for Windows key. Include proper error handling and resource cleanup. Use the tauri::async_runtime for Windows message pump to avoid blocking the main thread.",
+        "testStrategy": "Unit tests for hook callback functions, integration tests on Windows to verify mouse button 3,4 and Windows key suppression works correctly",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Research and setup windows-rs dependencies and FFI bindings",
+            "description": "Set up the windows-rs crate dependency and establish proper FFI bindings for Windows hook APIs",
+            "dependencies": [],
+            "details": "Add windows-rs crate (0.52+) to Cargo.toml. Research and implement FFI bindings for SetWindowsHookExA/W, UnhookWindowsHookEx, CallNextHookEx, GetMessage, and related Windows APIs. Set up proper use statements for windows::Win32::UI::WindowsAndMessaging and windows::Win32::Foundation modules. Configure build settings for Windows targets.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement mouse hook callback function with MSLLHOOKSTRUCT handling",
+            "description": "Create the low-level mouse hook callback to intercept mouse button 3 and 4 events",
+            "dependencies": [
+              "1.1"
+            ],
+            "details": "Implement mouse_hook_proc callback function that handles MSLLHOOKSTRUCT. Filter for WM_XBUTTONUP and WM_XBUTTONDOWN messages. Check XBUTTON1 and XBUTTON2 flags for mouse buttons 3 and 4. Return 1 to suppress the event or call CallNextHookEx to allow it. Handle proper casting between Rust types and Windows API types.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement keyboard hook callback with KBDLLHOOKSTRUCT and VK_LWIN suppression",
+            "description": "Create the low-level keyboard hook callback to intercept and suppress Windows key events",
+            "dependencies": [
+              "1.1"
+            ],
+            "details": "Implement keyboard_hook_proc callback function that handles KBDLLHOOKSTRUCT. Filter for WM_KEYDOWN and WM_SYSKEYDOWN messages with VK_LWIN virtual key code. Return 1 to suppress Windows key events or call CallNextHookEx for other keys. Handle proper type conversions and ensure the callback signature matches Windows API expectations.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create thread-safe hook management with proper install/uninstall",
+            "description": "Implement thread-safe hook installation and cleanup using Windows APIs",
+            "dependencies": [
+              "1.2",
+              "1.3"
+            ],
+            "details": "Create HookManager struct with methods for install_hooks() and uninstall_hooks(). Use SetWindowsHookExW with WH_MOUSE_LL and WH_KEYBOARD_LL flags. Store hook handles (HHOOK) in thread-safe containers like Arc<Mutex<>>. Implement proper error handling for hook installation failures. Ensure hooks are uninstalled on application exit to prevent resource leaks.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Integrate Windows message pump with Tauri's async runtime",
+            "description": "Set up the Windows message pump to process hook events without blocking the main thread",
+            "dependencies": [
+              "1.4"
+            ],
+            "details": "Use tauri::async_runtime to spawn a dedicated thread for the Windows message pump. Implement GetMessage loop to process Windows messages for hooks. Ensure the message pump thread communicates hook status back to the main application thread. Handle proper thread synchronization and shutdown signals. Prevent the async runtime from blocking Tauri's main event loop.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Add comprehensive error handling and resource cleanup",
+            "description": "Implement robust error handling and ensure proper resource cleanup for all hook operations",
+            "dependencies": [
+              "1.5"
+            ],
+            "details": "Add Result<> return types for all hook operations with custom error types. Implement Drop trait for automatic resource cleanup. Add logging using log crate for debugging hook operations. Handle edge cases like hook installation failures, invalid parameters, and Windows API errors. Implement graceful shutdown that ensures all hooks are uninstalled and threads are properly terminated.",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Setup SignalDB for Configuration Management",
+        "description": "Integrate SignalDB as the state management solution for application configuration",
+        "details": "Install SignalDB (@signaldb/core, @signaldb/fs) and set up reactive configuration store. Create config schema with fields: enableWindowsKey (boolean), enableMouseButton3 (boolean), enableMouseButton4 (boolean), enableMouseButton5 (boolean), startMinimized (boolean), startWithWindows (boolean). Implement persistent storage to %APPDATA%/inhibit-windows-events/config.json. Use SolidJS reactivity to sync with SignalDB collections.",
+        "testStrategy": "Test config persistence across app restarts, validate schema validation, test reactivity updates in UI",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Install SignalDB Dependencies and Setup Basic Store",
+            "description": "Install @signaldb/core and @signaldb/fs packages and create basic reactive store setup",
+            "dependencies": [],
+            "details": "Add SignalDB dependencies to package.json (@signaldb/core, @signaldb/fs). Initialize basic SignalDB collection and reactive store infrastructure. Set up TypeScript types for SignalDB integration. Create initial store module with proper imports and basic configuration.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Design Configuration Schema with Validation",
+            "description": "Create comprehensive configuration schema with all required fields and validation rules",
+            "dependencies": [
+              "2.1"
+            ],
+            "details": "Define configuration schema with fields: enableWindowsKey, enableMouseButton3, enableMouseButton4, enableMouseButton5, startMinimized, startWithWindows (all boolean). Implement schema validation using SignalDB's built-in validation or custom validators. Create TypeScript interfaces for type safety. Add default values and validation error handling.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement Persistent Storage to %APPDATA%",
+            "description": "Set up file-based persistence to %APPDATA%/inhibit-windows-events/config.json with proper error handling",
+            "dependencies": [
+              "2.2"
+            ],
+            "details": "Configure SignalDB with @signaldb/fs adapter for persistent storage. Set up file path resolution to %APPDATA%/inhibit-windows-events/config.json. Implement proper directory creation, file I/O error handling, and data serialization/deserialization. Add backup and recovery mechanisms for corrupted config files.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Integrate with SolidJS Reactivity System",
+            "description": "Create reactive interfaces between SignalDB and SolidJS with type-safe bindings",
+            "dependencies": [
+              "2.3"
+            ],
+            "details": "Create SolidJS signals that sync with SignalDB collections for reactive updates. Implement type-safe hooks/composables for accessing configuration values. Set up automatic UI updates when configuration changes. Create utilities for easy integration with SolidJS components and ensure proper cleanup and memory management.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Implement System Tray Integration",
+        "description": "Add Windows system tray support with context menu and minimize-to-tray functionality",
+        "details": "Use tauri-plugin-system-tray (or equivalent v2 plugin) to create system tray icon. Implement context menu with options: Show/Hide window, Toggle Windows Key Hook, Toggle Mouse Button Hooks, Exit. Configure tray icon using existing app.ico. Implement window hide on close and show on tray icon click. Handle tray icon tooltips showing current hook status.",
+        "testStrategy": "Test tray icon visibility, context menu functionality, window show/hide behavior, icon updates based on hook status",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Research and setup Tauri v2 system tray plugin",
+            "description": "Install and configure the appropriate system tray plugin for Tauri v2",
+            "dependencies": [],
+            "details": "Research available Tauri v2 system tray plugins (tauri-plugin-system-tray or equivalent v2 plugin). Install the plugin and update Cargo.toml dependencies. Configure the plugin in main.rs and ensure it's properly initialized. Handle any breaking changes from v1 to v2 API.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement tray icon creation with existing app.ico",
+            "description": "Create system tray icon using the existing app.ico file",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "Configure the system tray icon using the existing app.ico file. Ensure proper icon sizing and format compatibility across different Windows versions and DPI settings. Handle icon resource loading and error cases when icon file is missing or corrupted.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Create context menu with Show/Hide, hook toggles, and Exit options",
+            "description": "Implement system tray context menu with all required options",
+            "dependencies": [
+              "3.2"
+            ],
+            "details": "Create context menu items: Show/Hide window, Toggle Windows Key Hook, Toggle Mouse Button Hooks (separate items for button 3, 4, 5), and Exit. Connect menu items to appropriate Tauri commands or state management. Handle menu item state updates to reflect current hook status.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement window show/hide behavior and tray click handlers",
+            "description": "Add window management functionality for minimize-to-tray and show/hide operations",
+            "dependencies": [
+              "3.3"
+            ],
+            "details": "Implement window hide on close button click (minimize to tray instead of exit). Add tray icon click handler to show/hide main window. Handle window focus and bring-to-front behavior when showing from tray. Ensure proper window state management and restoration.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Add dynamic tray tooltips and icon updates based on hook status",
+            "description": "Implement dynamic system tray tooltips and visual indicators for current hook status",
+            "dependencies": [
+              "3.4"
+            ],
+            "details": "Create dynamic tray tooltips that show current status of Windows key and mouse button hooks. Implement icon state changes or overlays to visually indicate active/inactive hook status. Update tooltips and icons in real-time when hook states change through the application or context menu.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Create Configuration Interface Components",
+        "description": "Build TypeScript/SolidJS UI components for managing application settings",
+        "details": "Replace default App.tsx with configuration interface. Create toggle switches for: Windows Key Hook, Mouse Button 3/4/5 hooks, Start Minimized, Start with Windows. Use SolidJS signals connected to SignalDB for reactive updates. Implement clean, modern UI using CSS Grid/Flexbox. Add status indicators showing current hook state and system tray status.",
+        "testStrategy": "Test all toggle switches update configuration correctly, verify UI reactivity, test configuration persistence",
+        "priority": "medium",
+        "dependencies": [
+          2
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Replace default App.tsx with configuration layout",
+            "description": "Remove template code and create main configuration interface layout using CSS Grid/Flexbox",
+            "dependencies": [],
+            "details": "Replace the default App.tsx template with a clean configuration interface. Implement CSS Grid or Flexbox layout for organized sections. Create header area for app title, main content area for configuration toggles, and footer area for status information. Remove all Tauri/Vite template code and styling. Set up proper responsive design foundations.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Create toggle switch components connected to SignalDB",
+            "description": "Build reusable toggle components for all configuration options with reactive state management",
+            "dependencies": [
+              "4.1"
+            ],
+            "details": "Create toggle switch components for Windows Key Hook, Mouse Button 3/4/5 hooks, Start Minimized, and Start with Windows options. Connect each toggle to SignalDB using SolidJS signals for reactive updates. Implement proper component props interface for labels, state, and callbacks. Style toggles with modern CSS for consistent appearance across all configuration options.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Add status indicators and real-time UI updates",
+            "description": "Implement status indicators showing current hook states and system tray status with real-time updates",
+            "dependencies": [
+              "4.2"
+            ],
+            "details": "Create status indicator components that display current hook activation state, system tray status, and connection status. Use SolidJS reactivity to update indicators in real-time based on SignalDB state changes. Implement visual feedback (colors, icons) to clearly show enabled/disabled states. Add status text or tooltips explaining current application state to users.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Implement Windows Startup Registration",
+        "description": "Add functionality to register/unregister the application for Windows startup",
+        "details": "Create Rust functions to manage Windows registry HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run entry. Implement add_to_startup() and remove_from_startup() functions using the winreg crate (0.52+). Expose as Tauri commands to frontend. Handle UAC permissions gracefully and provide user feedback for registry operations.",
+        "testStrategy": "Test registry key creation/deletion, verify app starts on Windows boot when enabled, test permission handling",
+        "priority": "medium",
+        "dependencies": [
+          3
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add winreg dependency and setup registry access",
+            "description": "Add winreg crate dependency to Cargo.toml and create basic registry access functions",
+            "dependencies": [],
+            "details": "Add winreg = \"0.52\" to Cargo.toml. Create a new module for Windows startup functionality. Implement basic registry key access functions to read/write HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run. Include proper error handling for registry access failures.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement add_to_startup() function",
+            "description": "Create function to register application in Windows startup registry",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Implement add_to_startup() function that creates/updates the registry entry with the application's executable path. Handle UAC permission requirements and provide appropriate error messages. Ensure the registry value points to the correct executable location with proper command line arguments if needed.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement remove_from_startup() function",
+            "description": "Create function to unregister application from Windows startup",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Implement remove_from_startup() function that safely deletes the registry entry. Include error handling for cases where the registry key doesn't exist or access is denied. Ensure graceful handling when the application is not currently registered for startup.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create Tauri commands and frontend integration",
+            "description": "Expose startup functions as Tauri commands and integrate with frontend UI",
+            "dependencies": [
+              "5.2",
+              "5.3"
+            ],
+            "details": "Create Tauri command handlers for add_to_startup and remove_from_startup functions. Implement proper error serialization for frontend consumption. Add frontend integration to call these commands from the configuration UI. Include user feedback mechanisms for successful operations and permission errors.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Create Tauri Commands for Hook Management",
+        "description": "Implement Rust backend commands for controlling hooks from the frontend",
+        "details": "Create Tauri commands: enable_hooks(), disable_hooks(), toggle_windows_key_hook(), toggle_mouse_button_hook(button_id), get_hook_status(). Use tauri::State for thread-safe hook management. Implement proper error handling and return meaningful status information to frontend. Ensure hooks can be toggled without restarting the application.",
+        "testStrategy": "Test each command via Tauri's invoke API, verify hooks enable/disable correctly, test thread safety",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          4
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design Thread-Safe State Management Architecture",
+            "description": "Create Rust architecture using tauri::State for managing hook state across threads",
+            "dependencies": [],
+            "details": "Design and implement a thread-safe state management system using tauri::State<Mutex<HookState>> or similar. Define HookState struct to track current status of Windows key hook, mouse button hooks (3/4/5), and overall hook system state. Implement proper synchronization primitives to prevent race conditions when multiple commands access hook state simultaneously.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement Core Hook Control Commands",
+            "description": "Create enable_hooks() and disable_hooks() Tauri commands with error handling",
+            "dependencies": [
+              "6.1"
+            ],
+            "details": "Implement enable_hooks() and disable_hooks() Tauri commands that interact with the thread-safe state. Add comprehensive error handling for hook installation failures, permission issues, and system conflicts. Return structured error messages to frontend. Ensure commands properly initialize/cleanup Windows API hooks and update internal state atomically.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Create Individual Hook Toggle Commands",
+            "description": "Implement toggle_windows_key_hook() and toggle_mouse_button_hook() commands",
+            "dependencies": [
+              "6.2"
+            ],
+            "details": "Implement toggle_windows_key_hook() for Windows key control and toggle_mouse_button_hook(button_id) for mouse buttons 3/4/5. Each command should check current state, toggle appropriately, and update the shared state. Handle button_id parameter validation (3/4/5 only). Ensure individual toggles work without affecting other hooks and maintain consistency with overall hook system state.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement Hook Status Reporting",
+            "description": "Create get_hook_status() command with comprehensive status information",
+            "dependencies": [
+              "6.3"
+            ],
+            "details": "Implement get_hook_status() command that returns detailed status object including: overall hook system status, individual hook states (Windows key, mouse button 3/4/5), last error messages if any, hook installation timestamps, and system compatibility info. Return structured JSON that frontend can easily consume for UI updates and status indicators.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Integrate Commands with Existing Hook System",
+            "description": "Connect Tauri commands to existing hook implementation and prepare frontend integration",
+            "dependencies": [
+              "6.4"
+            ],
+            "details": "Integrate all Tauri commands with the existing Windows API hook implementation. Ensure commands properly interact with existing hook installation/removal code. Update tauri.conf.json to expose commands to frontend. Create TypeScript bindings/types for frontend consumption. Test command invocation from frontend and verify proper bidirectional communication between Rust backend and SolidJS frontend.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Add Extended Mouse Button Support",
+        "description": "Extend mouse hook implementation to support additional extended mouse buttons",
+        "details": "Extend mouse hook to detect and suppress additional mouse buttons (buttons 5, 6, 7, etc.) by parsing MSLLHOOKSTRUCT.mouseData field. Add configuration options for each extended button. Research common mouse button mappings and implement support for up to 8 mouse buttons if hardware detection allows. Provide fallback behavior for unsupported buttons.",
+        "testStrategy": "Test with various gaming mice, verify extended buttons are properly detected and suppressed, test configuration per button",
+        "priority": "low",
+        "dependencies": [
+          1,
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Implement Application Icon and Branding",
+        "description": "Create proper application icons and update branding throughout the application",
+        "details": "Design or adapt existing app.ico for system tray and window icon. Create proper icon set for Tauri (32x32.png, 128x128.png, etc.). Update tauri.conf.json with proper product name, description, and icon paths. Update window title and application metadata. Ensure consistent branding in system tray and main window.",
+        "testStrategy": "Verify icons display correctly in system tray, taskbar, and window title bar on different Windows versions",
+        "priority": "low",
+        "dependencies": [
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Add Default Configuration Setup",
+        "description": "Implement proper default configuration with Mouse Button 4 hook enabled by default",
+        "details": "Set up default configuration object with: enableWindowsKey: false, enableMouseButton3: false, enableMouseButton4: true (as per PRD requirement), enableMouseButton5: false, startMinimized: false, startWithWindows: false. Implement first-run detection and configuration initialization. Add configuration migration logic for future updates.",
+        "testStrategy": "Test fresh installation creates correct default config, verify Mouse Button 4 is enabled by default, test configuration migration",
+        "priority": "medium",
+        "dependencies": [
+          2,
+          5
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Implement Error Handling and Logging",
+        "description": "Add comprehensive error handling, logging, and user feedback mechanisms",
+        "details": "Implement structured logging using the log crate with env_logger or tracing. Add error handling for Windows API calls, hook installation failures, and configuration errors. Implement user-friendly error messages in the UI and system tray notifications. Add debug logging for hook events (configurable). Implement graceful degradation when hooks fail to install.",
+        "testStrategy": "Test error scenarios like hook installation failure, invalid configuration, Windows API errors. Verify logging output and user feedback",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          3,
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-08-29T14:13:05.157Z",
+      "updated": "2025-08-29T14:45:33.692Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

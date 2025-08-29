@@ -1,0 +1,37 @@
+# Product Requirements Document - Inhibit Windows Events
+
+## 1. Overview
+**Product Name:** Inhibit Windows Events
+**Version:** 2.0
+**Date:** 2025-08-30
+**Author:** Liam Mitchell
+
+This document outlines the requirements for building a windows based application with system tray support that can prevent mouse buttons 3, 4 and windows key from doing their normal functionality. This allows them to be used in applications such as Discord as voice keybinds without causing back/forward or start menu to show.
+
+## 2. Objectives
+- Create Tauri app for windows. Note: I am currently developing on Linux in WSL2 but could run it on windows to test.
+- Uplift existing code in the Inhibit Events directory into code in the rust side that can be configured from Tauri front end.
+- Create a system tray, and minimize to system tray.
+- Add a config interface using typescript.
+- Add SignalDB to manage the config file.
+- Add a config option to Launch on windows startup.
+- Add a config option to start minimized to tray.
+- Add a config option for Enable/Disable Windows Key hook.
+- Add a config option for Enable/Disable specific mouse button hook.
+- Add support for additional extended mouse buttons if easily possible.
+- Default config should have MB 4 hooked to inhibit the windows functionality.
+
+The github repository is stored here
+https://github.com/LiamKarlMitchell/InhibitWindowsEvents
+
+I have already created initial Tauri project files.
+This scope of work will essentially resolve https://github.com/LiamKarlMitchell/InhibitWindowsEvents/issues/6
+
+
+---
+
+**Document Control:**
+- Version: 1.0
+- Last Updated: August 30th, 2025
+- Next Review: Janurary 1st, 2026
+- Approved By: Product Owner, Technical Lead
