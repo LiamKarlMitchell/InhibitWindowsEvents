@@ -37,6 +37,12 @@ pub enum HookError {
 static ENABLE_HOOKS: AtomicBool = AtomicBool::new(true);
 
 #[cfg(windows)]
+static ENABLE_WINDOWS_KEY_HOOK: AtomicBool = AtomicBool::new(true);
+
+#[cfg(windows)]
+static ENABLE_MOUSE_BUTTON_HOOKS: AtomicBool = AtomicBool::new(true);
+
+#[cfg(windows)]
 pub struct HookManager {
     mouse_hook: Arc<Mutex<Option<HHOOK>>>,
     keyboard_hook: Arc<Mutex<Option<HHOOK>>>,
@@ -236,6 +242,11 @@ unsafe extern "system" fn mouse_hook_proc(
     // Handle mouse messages
     match w_param.0 as u32 {
         WM_XBUTTONDOWN | WM_XBUTTONUP => {
+            // Check if mouse button hooks are enabled
+            if !ENABLE_MOUSE_BUTTON_HOOKS.load(Ordering::Relaxed) {
+                return CallNextHookEx(None, n_code, w_param, l_param);
+            }
+            
             // Validate l_param is not null
             if l_param.0 != 0 {
                 debug!("Suppressing extra mouse button: wParam={:X}", w_param.0);
@@ -275,7 +286,9 @@ unsafe extern "system" fn keyboard_hook_proc(
     let w_param_u32 = w_param.0 as u32;
     
     // Handle left Windows key suppression
-    if vk_code == VK_LWIN.0 as u32 && ENABLE_HOOKS.load(Ordering::Relaxed) {
+    if vk_code == VK_LWIN.0 as u32 
+        && ENABLE_HOOKS.load(Ordering::Relaxed) 
+        && ENABLE_WINDOWS_KEY_HOOK.load(Ordering::Relaxed) {
         match w_param_u32 {
             WM_KEYDOWN | WM_SYSKEYDOWN => {
                 debug!("Suppressing VK_LWIN key down, replacing with F24");
@@ -376,16 +389,213 @@ async fn uninstall_hooks() -> Result<String, String> {
     }
 }
 
+#[cfg(windows)]
+#[tauri::command]
+async fn toggle_windows_key_hook() -> Result<String, String> {
+    let current_state = ENABLE_WINDOWS_KEY_HOOK.load(Ordering::Relaxed);
+    let new_state = !current_state;
+    ENABLE_WINDOWS_KEY_HOOK.store(new_state, Ordering::Relaxed);
+    
+    let status = if new_state { "enabled" } else { "disabled" };
+    info!("Windows Key hook {}", status);
+    Ok(format!("Windows Key hook {}", status))
+}
+
+#[cfg(windows)]
+#[tauri::command]
+async fn toggle_mouse_button_hooks() -> Result<String, String> {
+    let current_state = ENABLE_MOUSE_BUTTON_HOOKS.load(Ordering::Relaxed);
+    let new_state = !current_state;
+    ENABLE_MOUSE_BUTTON_HOOKS.store(new_state, Ordering::Relaxed);
+    
+    let status = if new_state { "enabled" } else { "disabled" };
+    info!("Mouse Button hooks {}", status);
+    Ok(format!("Mouse Button hooks {}", status))
+}
+
+#[cfg(windows)]
+#[tauri::command]
+async fn get_hook_status() -> Result<serde_json::Value, String> {
+    let hook_status = serde_json::json!({
+        "overall_enabled": ENABLE_HOOKS.load(Ordering::Relaxed),
+        "windows_key_enabled": ENABLE_WINDOWS_KEY_HOOK.load(Ordering::Relaxed),
+        "mouse_buttons_enabled": ENABLE_MOUSE_BUTTON_HOOKS.load(Ordering::Relaxed),
+        "hooks_installed": HOOK_MANAGER.get().is_some()
+    });
+    
+    Ok(hook_status)
+}
+
+#[cfg(windows)]
+fn get_dynamic_tooltip() -> String {
+    let overall_enabled = ENABLE_HOOKS.load(Ordering::Relaxed);
+    let windows_key_enabled = ENABLE_WINDOWS_KEY_HOOK.load(Ordering::Relaxed);
+    let mouse_buttons_enabled = ENABLE_MOUSE_BUTTON_HOOKS.load(Ordering::Relaxed);
+    let hooks_installed = HOOK_MANAGER.get().is_some();
+    
+    if !hooks_installed {
+        return "Inhibit Windows Events - No hooks installed".to_string();
+    }
+    
+    if !overall_enabled {
+        return "Inhibit Windows Events - All hooks disabled (Alt+ScrollLock to enable)".to_string();
+    }
+    
+    let mut status_parts = Vec::new();
+    if windows_key_enabled {
+        status_parts.push("Win Key: ON");
+    } else {
+        status_parts.push("Win Key: OFF");
+    }
+    
+    if mouse_buttons_enabled {
+        status_parts.push("Mouse Btns: ON");
+    } else {
+        status_parts.push("Mouse Btns: OFF");
+    }
+    
+    format!("Inhibit Windows Events - {}", status_parts.join(", "))
+}
+
+#[cfg(windows)]
+fn update_tray_tooltip(app_handle: &tauri::AppHandle) {
+    if let Some(tray) = app_handle.tray_by_id("main") {
+        let new_tooltip = get_dynamic_tooltip();
+        if let Err(e) = tray.set_tooltip(Some(&new_tooltip)) {
+            error!("Failed to update tray tooltip: {}", e);
+        } else {
+            debug!("Updated tray tooltip: {}", new_tooltip);
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_fs::init());
+        .plugin(tauri_plugin_fs::init())
+        .setup(|app| {
+            // Initialize system tray
+            #[cfg(windows)]
+            {
+                use tauri::tray::TrayIconBuilder;
+                use tauri::{
+                    menu::{MenuBuilder, MenuItemBuilder},
+                    tray::{MouseButton, MouseButtonState, TrayIconEvent},
+                    Manager,
+                };
+
+                // Create tray menu items
+                let show_hide = MenuItemBuilder::with_id("show_hide", "Show/Hide").build(app)?;
+                let separator1 = tauri::menu::PredefinedMenuItem::separator(app)?;
+                let toggle_windows_key = MenuItemBuilder::with_id("toggle_windows_key", "Toggle Windows Key Hook").build(app)?;
+                let toggle_mouse_buttons = MenuItemBuilder::with_id("toggle_mouse_buttons", "Toggle Mouse Button Hooks").build(app)?;
+                let separator2 = tauri::menu::PredefinedMenuItem::separator(app)?;
+                let exit = MenuItemBuilder::with_id("exit", "Exit").build(app)?;
+
+                // Build the menu
+                let menu = MenuBuilder::new(app)
+                    .items(&[
+                        &show_hide,
+                        &separator1,
+                        &toggle_windows_key,
+                        &toggle_mouse_buttons,
+                        &separator2,
+                        &exit,
+                    ])
+                    .build()?;
+
+                // Create tray icon with dynamic tooltip
+                let initial_tooltip = get_dynamic_tooltip();
+                let tray = TrayIconBuilder::new()
+                    .id("main")
+                    .tooltip(&initial_tooltip)
+                    .icon(app.default_window_icon().unwrap().clone())
+                    .menu(&menu)
+                    .menu_on_left_click(false)
+                    .on_menu_event(move |app, event| match event.id().as_ref() {
+                        "show_hide" => {
+                            if let Some(window) = app.get_webview_window("main") {
+                                match window.is_visible() {
+                                    Ok(true) => {
+                                        let _ = window.hide();
+                                    }
+                                    Ok(false) => {
+                                        let _ = window.show();
+                                        let _ = window.set_focus();
+                                    }
+                                    Err(e) => {
+                                        eprintln!("Error checking window visibility: {}", e);
+                                    }
+                                }
+                            }
+                        }
+                        "toggle_windows_key" => {
+                            let app_handle = app.clone();
+                            tokio::spawn(async move {
+                                match toggle_windows_key_hook().await {
+                                    Ok(message) => {
+                                        info!("Windows Key hook toggled: {}", message);
+                                        update_tray_tooltip(&app_handle);
+                                    }
+                                    Err(e) => {
+                                        error!("Failed to toggle Windows Key hook: {}", e);
+                                    }
+                                }
+                            });
+                        }
+                        "toggle_mouse_buttons" => {
+                            let app_handle = app.clone();
+                            tokio::spawn(async move {
+                                match toggle_mouse_button_hooks().await {
+                                    Ok(message) => {
+                                        info!("Mouse Button hooks toggled: {}", message);
+                                        update_tray_tooltip(&app_handle);
+                                    }
+                                    Err(e) => {
+                                        error!("Failed to toggle Mouse Button hooks: {}", e);
+                                    }
+                                }
+                            });
+                        }
+                        "exit" => {
+                            app.exit(0);
+                        }
+                        _ => {}
+                    })
+                    .on_tray_icon_event(|tray, event| {
+                        if let TrayIconEvent::Click {
+                            button: MouseButton::Left,
+                            button_state: MouseButtonState::Up,
+                            ..
+                        } = event {
+                            let app = tray.app_handle();
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.unminimize();
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
+                        }
+                    })
+                    .build(app)?;
+
+                info!("System tray initialized successfully");
+            }
+
+            Ok(())
+        });
         
     #[cfg(windows)]
     {
         builder = builder
-            .invoke_handler(tauri::generate_handler![greet, install_hooks, uninstall_hooks])
+            .invoke_handler(tauri::generate_handler![
+                greet, 
+                install_hooks, 
+                uninstall_hooks, 
+                toggle_windows_key_hook, 
+                toggle_mouse_button_hooks, 
+                get_hook_status
+            ])
             .on_window_event(|window, event| {
                 use tauri::WindowEvent;
                 match event {

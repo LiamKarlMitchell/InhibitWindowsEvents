@@ -152,7 +152,7 @@
             "description": "Install and configure the appropriate system tray plugin for Tauri v2",
             "dependencies": [],
             "details": "Research available Tauri v2 system tray plugins (tauri-plugin-system-tray or equivalent v2 plugin). Install the plugin and update Cargo.toml dependencies. Configure the plugin in main.rs and ensure it's properly initialized. Handle any breaking changes from v1 to v2 API.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -163,7 +163,7 @@
               "3.1"
             ],
             "details": "Configure the system tray icon using the existing app.ico file. Ensure proper icon sizing and format compatibility across different Windows versions and DPI settings. Handle icon resource loading and error cases when icon file is missing or corrupted.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -174,7 +174,7 @@
               "3.2"
             ],
             "details": "Create context menu items: Show/Hide window, Toggle Windows Key Hook, Toggle Mouse Button Hooks (separate items for button 3, 4, 5), and Exit. Connect menu items to appropriate Tauri commands or state management. Handle menu item state updates to reflect current hook status.",
-            "status": "pending",
+            "status": "in-progress",
             "testStrategy": ""
           },
           {
@@ -430,7 +430,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:13:05.157Z",
-      "updated": "2025-08-29T15:47:35.364Z",
+      "updated": "2025-08-29T16:15:46.736Z",
       "description": "Tasks for master context"
     }
   }
