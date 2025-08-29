@@ -95,6 +95,62 @@ button {
   margin-right: 5px;
 }
 
+/* Hook Control Styles */
+.hook-controls {
+  margin: 2rem 0;
+  padding: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.install-btn {
+  background-color: #22c55e;
+  color: white;
+  border-color: #22c55e;
+}
+
+.install-btn:hover:not(:disabled) {
+  background-color: #16a34a;
+  border-color: #16a34a;
+}
+
+.uninstall-btn {
+  background-color: #ef4444;
+  color: white;
+  border-color: #ef4444;
+}
+
+.uninstall-btn:hover:not(:disabled) {
+  background-color: #dc2626;
+  border-color: #dc2626;
+}
+
+.install-btn:disabled,
+.uninstall-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #6b7280;
+  border-color: #6b7280;
+}
+
+.status-message {
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  border-radius: 4px;
+  background-color: #f3f4f6;
+  color: #374151;
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     color: #f6f6f6;

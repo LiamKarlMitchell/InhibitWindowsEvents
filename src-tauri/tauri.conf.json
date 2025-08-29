@@ -21,6 +21,12 @@
       "csp": null
     }
   },
+  "plugins": {
+    "fs": {
+      "all": true,
+      "scope": ["$APPLOCALDATA/*"]
+    }
+  },
   "bundle": {
     "active": true,
     "targets": "all",

@@ -7,8 +7,8 @@
       "temperature": 0.2
     },
     "research": {
-      "provider": "anthropic",
-      "modelId": "claude-sonnet-4-20250514",
+      "provider": "claude-code",
+      "modelId": "sonnet",
       "maxTokens": 64000,
       "temperature": 0.1
     },

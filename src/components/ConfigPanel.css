@@ -1,0 +1,56 @@
+.config-panel {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.config-panel h2 {
+  color: #333;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.config-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #f9f9f9;
+}
+
+.config-section h3 {
+  margin: 0 0 16px 0;
+  color: #555;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.config-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.config-item input[type="checkbox"] {
+  margin-right: 8px;
+  transform: scale(1.2);
+}
+
+.config-item span {
+  flex: 1;
+}
+
+.config-preview {
+  background: #2d2d2d;
+  color: #f8f8f2;
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  margin: 0;
+}

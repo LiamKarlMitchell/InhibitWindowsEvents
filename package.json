@@ -12,14 +12,20 @@
   },
   "license": "MIT",
   "dependencies": {
-    "solid-js": "^1.9.3",
+    "@pitzzahh/signaldb-adapter-tauri": "^2.1.6",
+    "@playwright/test": "^1.55.0",
+    "@signaldb/core": "^1.7.1",
+    "@signaldb/fs": "^1.0.1",
+    "@signaldb/solid": "^1.0.0",
     "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-opener": "^2"
+    "@tauri-apps/plugin-fs": "^2.4.2",
+    "@tauri-apps/plugin-opener": "^2",
+    "solid-js": "^1.9.3"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2",
     "typescript": "~5.6.2",
     "vite": "^6.0.3",
-    "vite-plugin-solid": "^2.11.0",
-    "@tauri-apps/cli": "^2"
+    "vite-plugin-solid": "^2.11.0"
   }
 }
