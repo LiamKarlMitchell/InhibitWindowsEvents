@@ -314,7 +314,7 @@
           1,
           4
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -322,7 +322,7 @@
             "description": "Create Rust architecture using tauri::State for managing hook state across threads",
             "dependencies": [],
             "details": "Design and implement a thread-safe state management system using tauri::State<Mutex<HookState>> or similar. Define HookState struct to track current status of Windows key hook, mouse button hooks (3/4/5), and overall hook system state. Implement proper synchronization primitives to prevent race conditions when multiple commands access hook state simultaneously.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -333,7 +333,7 @@
               "6.1"
             ],
             "details": "Implement enable_hooks() and disable_hooks() Tauri commands that interact with the thread-safe state. Add comprehensive error handling for hook installation failures, permission issues, and system conflicts. Return structured error messages to frontend. Ensure commands properly initialize/cleanup Windows API hooks and update internal state atomically.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -344,7 +344,7 @@
               "6.2"
             ],
             "details": "Implement toggle_windows_key_hook() for Windows key control and toggle_mouse_button_hook(button_id) for mouse buttons 3/4/5. Each command should check current state, toggle appropriately, and update the shared state. Handle button_id parameter validation (3/4/5 only). Ensure individual toggles work without affecting other hooks and maintain consistency with overall hook system state.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -355,7 +355,7 @@
               "6.3"
             ],
             "details": "Implement get_hook_status() command that returns detailed status object including: overall hook system status, individual hook states (Windows key, mouse button 3/4/5), last error messages if any, hook installation timestamps, and system compatibility info. Return structured JSON that frontend can easily consume for UI updates and status indicators.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -366,7 +366,7 @@
               "6.4"
             ],
             "details": "Integrate all Tauri commands with the existing Windows API hook implementation. Ensure commands properly interact with existing hook installation/removal code. Update tauri.conf.json to expose commands to frontend. Create TypeScript bindings/types for frontend consumption. Test command invocation from frontend and verify proper bidirectional communication between Rust backend and SolidJS frontend.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -430,8 +430,40 @@
           2,
           5
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create default configuration object with Mouse Button 4 enabled",
+            "description": "Implement the default configuration object with Mouse Button 4 hook enabled by default as specified in PRD",
+            "dependencies": [],
+            "details": "Create a default configuration object with the following settings: enableWindowsKey: false, enableMouseButton3: false, enableMouseButton4: true (as per PRD requirement), enableMouseButton5: false, startMinimized: false, startWithWindows: false. This configuration should be used as the baseline for first-time application setup.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Add first-run detection and configuration initialization logic",
+            "description": "Implement logic to detect first application run and initialize configuration with defaults",
+            "dependencies": [
+              "9.1"
+            ],
+            "details": "Create first-run detection mechanism by checking for existing configuration file. When no configuration exists, initialize SignalDB store with the default configuration object. Ensure proper integration with the existing SignalDB configuration management system from Task 2. Handle edge cases like corrupted or incomplete configuration files.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement configuration migration system for future updates",
+            "description": "Create a configuration migration framework to handle configuration schema changes in future versions",
+            "dependencies": [
+              "9.2"
+            ],
+            "details": "Design and implement a versioned configuration migration system that can handle schema changes between application versions. Include version tracking in configuration, migration functions for potential future changes, and backward compatibility handling. Ensure the system can gracefully upgrade existing configurations while preserving user settings.",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
       },
       {
         "id": 10,
@@ -703,7 +735,7 @@
           15,
           16
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -745,8 +777,8 @@
               "17.2",
               "17.3"
             ],
-            "details": "Create monitoring service in src/services/monitoring-service.ts using setInterval for periodic status checks. Implement pollHookStatus() method that calls backend status commands every 1-2 seconds. Update hook store with fresh status data and statistics. Add event listeners for system events that might affect hook status (window focus/blur, system sleep/wake). Implement efficient polling with exponential backoff on errors and pause polling when app is minimized. Ensure proper cleanup of timers and listeners.",
-            "status": "in-progress",
+            "details": "Create monitoring service in src/services/monitoring-service.ts using setInterval for periodic status checks. Implement pollHookStatus() method that calls backend status commands every 1-2 seconds. Update hook store with fresh status data and statistics. Add event listeners for system events that might affect hook status (window focus/blur, system sleep/wake). Implement efficient polling with exponential backoff on errors and pause polling when app is minimized. Ensure proper cleanup of timers and listeners.\n<info added on 2025-08-30T15:50:40.920Z>\n**IMPLEMENTATION COMPLETED (2025-01-30)**\n\nSuccessfully implemented comprehensive real-time status monitoring service with advanced features:\n\n**Core Implementation:**\n- Created src/services/monitoring-service.ts with adaptive polling system (2-second normal intervals, 500ms when activity detected)\n- Replaced basic 5-second polling in hook-store.ts with sophisticated event-driven monitoring architecture\n- Integrated seamlessly with existing SolidJS reactive store patterns\n\n**Advanced Features:**\n- Exponential backoff error handling (starts at 1s, caps at 30s) with automatic recovery\n- Window focus/blur event listeners for intelligent pause/resume functionality\n- Real-time activity detection with automatic polling frequency adjustment\n- Comprehensive statistics tracking and event monitoring\n\n**UI Integration:**\n- Added real-time monitoring status indicator to App.tsx dashboard\n- Automatic UI updates reflecting current monitoring state and connection status\n- Proper loading states and error feedback integration\n\n**Quality Assurance:**\n- All frontend and Tauri builds passing successfully\n- Proper cleanup implementation for timers and event listeners\n- Memory-efficient polling with automatic resource management\n- Comprehensive error boundary handling for robustness\n\nThe monitoring service provides complete real-time visibility into hook system status with intelligent resource management and seamless user experience.\n</info added on 2025-08-30T15:50:40.920Z>",
+            "status": "done",
             "testStrategy": "Test real-time updates reflect actual hook states, verify polling efficiency, test cleanup on component unmount"
           },
           {
@@ -758,7 +790,7 @@
               "17.4"
             ],
             "details": "Create error handling middleware in TauriService to catch and categorize different error types (permission denied, hook conflicts, system errors). Implement user notification system using toast notifications or modal dialogs for errors. Add retry mechanisms with user confirmation for recoverable errors. Create error recovery flows (e.g., retry hook installation with elevated permissions). Implement graceful degradation when backend is unavailable. Add detailed error logging for debugging while showing simplified messages to users.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test error scenarios with proper user feedback, verify retry mechanisms work, test graceful degradation"
           }
         ]
@@ -774,8 +806,64 @@
           14,
           17
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create TrayPreview Component Base Structure",
+            "description": "Develop the foundational TrayPreview SolidJS component with proper interface definitions and basic layout structure for system tray visualization",
+            "dependencies": [],
+            "details": "Create TrayPreview.tsx component with TypeScript interfaces for TrayState, TrayPreviewProps. Include basic component structure with container, icon preview area, tooltip preview, and context menu simulation area. Define props for hook states (enableWindowsKey, enableMouseButton3/4/5 from store/types.ts), current tooltip text, and menu items. Implement basic styling with proper spacing and layout using the existing design system patterns from HookCard.tsx.",
+            "status": "done",
+            "testStrategy": "Verify component renders without errors, test prop passing and TypeScript type checking, confirm basic layout structure displays correctly"
+          },
+          {
+            "id": 2,
+            "title": "Implement Dynamic Tray Icon State Visualization",
+            "description": "Build visual representation of system tray icon states with color-coded indicators matching actual tray behavior",
+            "dependencies": [
+              "18.1"
+            ],
+            "details": "Create tray icon visualization using the existing StatusIndicator component pattern from HookCard.tsx. Implement icon state logic that matches get_dynamic_tooltip() function from lib.rs - show different visual states for: no hooks installed, all hooks disabled, individual hook states (Windows key, mouse buttons). Use color coding: green for active, gray for inactive, red for error states. Include proper transitions and animations using existing easing curves from the design system.",
+            "status": "done",
+            "testStrategy": "Test icon state changes based on different hook configurations, verify color coding matches expected states, confirm smooth transitions between states"
+          },
+          {
+            "id": 3,
+            "title": "Implement Dynamic Tooltip Preview Integration",
+            "description": "Create real-time tooltip preview that mirrors the actual system tray tooltip content and updates",
+            "dependencies": [
+              "18.2"
+            ],
+            "details": "Implement tooltip preview area that shows the exact same text as get_dynamic_tooltip() function generates. Create Tauri command to expose tooltip state to frontend, or use existing hook state from store to generate matching tooltip text. Include tooltip positioning, styling to match Windows system tray tooltips, and real-time updates when hook states change. Handle different tooltip states: no hooks, disabled hooks, active individual hooks, mixed states.",
+            "status": "done",
+            "testStrategy": "Verify tooltip text matches actual system tray tooltip, test real-time updates when hook states change, confirm tooltip styling matches Windows appearance"
+          },
+          {
+            "id": 4,
+            "title": "Build Context Menu Simulation Interface",
+            "description": "Create interactive context menu preview that simulates the actual system tray context menu structure and behavior",
+            "dependencies": [
+              "18.1"
+            ],
+            "details": "Build context menu simulation using existing UI components (Button, Toggle from ui/index.ts). Recreate the menu structure from lib.rs tray initialization: Show/Hide Window, Toggle Windows Key Hook, Toggle Mouse Button Hooks, Separator, Exit. Make menu items interactive for preview purposes but clearly indicate they are simulation. Use existing Modal or create dropdown-style menu with proper styling. Include hover states and proper menu item ordering.",
+            "status": "done",
+            "testStrategy": "Test menu structure matches actual tray menu, verify interactive states work for preview, confirm menu styling follows design system"
+          },
+          {
+            "id": 5,
+            "title": "Integrate TrayPreview with Existing Hook State Management",
+            "description": "Connect TrayPreview component to existing hook state management system for real-time synchronization with actual tray behavior",
+            "dependencies": [
+              "18.2",
+              "18.3",
+              "18.4"
+            ],
+            "details": "Integrate TrayPreview with store/hook-store.ts and existing Tauri commands. Use existing configuration state (AppConfig from store/types.ts) to drive preview updates. Create reactive signals that mirror actual hook states and update preview accordingly. Implement proper cleanup and error handling. Add preview to appropriate location in the UI (likely SettingsPanel.tsx or create dedicated section). Ensure preview updates match actual tray behavior timing and state changes.",
+            "status": "done",
+            "testStrategy": "Verify preview synchronization with actual tray states, test state changes reflect in both preview and actual tray, confirm proper integration with existing configuration management"
+          }
+        ]
       },
       {
         "id": 19,
@@ -805,7 +893,7 @@
           15,
           16
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -841,7 +929,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:13:05.157Z",
-      "updated": "2025-08-30T15:46:37.071Z",
+      "updated": "2025-08-30T21:53:01.938Z",
       "description": "Tasks for master context"
     }
   }

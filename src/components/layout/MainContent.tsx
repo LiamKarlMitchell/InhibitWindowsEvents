@@ -10,9 +10,11 @@ interface MainContentProps {
 function MainContent(props: MainContentProps) {
   return (
     <main 
+      id="main-content"
       class="flex-1 overflow-auto bg-gray-900"
       role="main"
       aria-labelledby="main-content-title"
+      tabindex="-1"
     >
       <div class="p-6 max-w-6xl mx-auto">
         {/* Content Header */}

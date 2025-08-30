@@ -55,6 +55,7 @@ function Sidebar(props: SidebarProps) {
 
   return (
     <aside 
+      id="navigation"
       class={`
         bg-gray-800 border-r border-gray-700 transition-all duration-300 ease-in-out
         ${props.isCollapsed ? "w-16" : "w-64"}
@@ -62,6 +63,7 @@ function Sidebar(props: SidebarProps) {
       `}
       role="navigation"
       aria-label="Main navigation"
+      tabindex="-1"
     >
       {/* Sidebar Header */}
       <div class="p-4 border-b border-gray-700">

@@ -2,6 +2,7 @@ import { createSignal } from "solid-js";
 import ConfigPanel from "./components/ConfigPanel";
 import { HeaderBar, Sidebar, MainContent, Footer } from "./components/layout";
 import { useHookStore } from "./store/hook-store";
+import { ToastContainer } from "./components/ui/Toast";
 
 function App() {
   const [isDarkMode, setIsDarkMode] = createSignal(true);
@@ -16,6 +17,7 @@ function App() {
     try {
       await hookStore.installHooks();
     } catch (error) {
+      // Error handling is now done in the hook store with toast notifications
       console.error('Failed to install hooks:', error);
     }
   }
@@ -24,6 +26,7 @@ function App() {
     try {
       await hookStore.uninstallHooks();
     } catch (error) {
+      // Error handling is now done in the hook store with toast notifications
       console.error('Failed to uninstall hooks:', error);
     }
   }
@@ -69,45 +72,48 @@ function App() {
               </div>
 
               {/* Hook Control Buttons */}
-              <div class="flex gap-3 mb-4">
+              <div class="flex gap-3 mb-4" role="group" aria-label="Hook management controls">
                 <button 
                   onClick={installHooks}
                   disabled={hookStore.hookStatus?.hooks_installed || hookStore.state.isInstalling}
-                  class={`btn-primary ${(hookStore.hookStatus?.hooks_installed || hookStore.state.isInstalling) ? "opacity-50 cursor-not-allowed" : ""}`}
+                  class={`btn-primary focus-ring ${(hookStore.hookStatus?.hooks_installed || hookStore.state.isInstalling) ? "opacity-50 cursor-not-allowed" : ""}`}
+                  aria-label={hookStore.state.isInstalling ? "Installing Windows hooks" : "Install Windows hooks to begin blocking events"}
+                  aria-describedby="install-hooks-description"
                 >
                   {hookStore.state.isInstalling ? (
-                    <div class="i-lucide-loader-2 animate-spin mr-2"></div>
+                    <div class="i-lucide-loader-2 animate-spin mr-2" aria-hidden="true"></div>
                   ) : (
-                    <div class="i-lucide-power mr-2"></div>
+                    <div class="i-lucide-power mr-2" aria-hidden="true"></div>
                   )}
                   {hookStore.state.isInstalling ? "Installing..." : "Install Hooks"}
                 </button>
                 <button 
                   onClick={uninstallHooks}
                   disabled={!hookStore.hookStatus?.hooks_installed || hookStore.state.isUninstalling}
-                  class={`btn-secondary ${(!hookStore.hookStatus?.hooks_installed || hookStore.state.isUninstalling) ? "opacity-50 cursor-not-allowed" : ""}`}
+                  class={`btn-secondary focus-ring ${(!hookStore.hookStatus?.hooks_installed || hookStore.state.isUninstalling) ? "opacity-50 cursor-not-allowed" : ""}`}
+                  aria-label={hookStore.state.isUninstalling ? "Uninstalling Windows hooks" : "Uninstall Windows hooks to stop blocking events"}
+                  aria-describedby="uninstall-hooks-description"
                 >
                   {hookStore.state.isUninstalling ? (
-                    <div class="i-lucide-loader-2 animate-spin mr-2"></div>
+                    <div class="i-lucide-loader-2 animate-spin mr-2" aria-hidden="true"></div>
                   ) : (
-                    <div class="i-lucide-power-off mr-2"></div>
+                    <div class="i-lucide-power-off mr-2" aria-hidden="true"></div>
                   )}
                   {hookStore.state.isUninstalling ? "Uninstalling..." : "Uninstall Hooks"}
                 </button>
               </div>
-
-              {/* Error Message */}
-              {hookStore.lastError && (
-                <div class="p-3 bg-red-900/20 border border-red-500/50 rounded-lg animate-fade-in">
-                  <div class="flex items-center gap-2 mb-2">
-                    <div class="i-lucide-alert-triangle text-red-500"></div>
-                    <p class="text-sm font-medium text-red-400">Error</p>
-                  </div>
-                  <p class="text-sm text-red-300">{hookStore.lastError.message}</p>
-                </div>
-              )}
               
-              {/* Connection Status */}
+              {/* Screen reader descriptions */}
+              <div class="sr-only">
+                <div id="install-hooks-description">
+                  Installs Windows low-level hooks to suppress Windows key and mouse button events
+                </div>
+                <div id="uninstall-hooks-description">
+                  Removes Windows hooks and restores normal keyboard and mouse functionality
+                </div>
+              </div>
+
+              {/* Connection Status - Keep minimal display */}
               {!hookStore.isConnected && (
                 <div class="p-3 bg-yellow-900/20 border border-yellow-500/50 rounded-lg animate-fade-in">
                   <div class="flex items-center gap-2">
@@ -141,15 +147,20 @@ function App() {
                           try {
                             await hookStore.toggleWindowsKeyHook();
                           } catch (error) {
+                            // Error handling is now done in the hook store with toast notifications
                             console.error('Failed to toggle Windows key hook:', error);
                           }
                         }}
                         disabled={hookStore.state.isToggling || !hookStore.isConnected}
-                        class={`text-xs px-2 py-1 rounded border ${
+                        class={`text-xs px-2 py-1 rounded border focus-ring ${
                           hookStore.hookStatus?.windows_key_hook_enabled ? 
                           "border-green-500 text-green-400 bg-green-500/10" : 
                           "border-gray-500 text-gray-400 bg-gray-500/10"
                         } ${(hookStore.state.isToggling || !hookStore.isConnected) ? "opacity-50 cursor-not-allowed" : "hover:opacity-80"}`}
+                        aria-label={`Windows key hook is currently ${hookStore.hookStatus?.windows_key_hook_enabled ? "enabled" : "disabled"}. Click to ${hookStore.hookStatus?.windows_key_hook_enabled ? "disable" : "enable"}.`}
+                        aria-describedby="windows-key-description"
+                        role="switch"
+                        aria-checked={hookStore.hookStatus?.windows_key_hook_enabled || false}
                       >
                         {hookStore.state.isToggling ? "..." : (
                           hookStore.hookStatus?.windows_key_hook_enabled ? "Enabled" : "Disabled"
@@ -157,7 +168,7 @@ function App() {
                       </button>
                     </div>
                   </div>
-                  <p class="text-sm text-gray-400">Replace Windows key with F24</p>
+                  <p class="text-sm text-gray-400" id="windows-key-description">Replace Windows key with F24</p>
                 </div>
               </div>
             </div>
@@ -185,15 +196,20 @@ function App() {
                           try {
                             await hookStore.toggleMouseButtonHooks();
                           } catch (error) {
+                            // Error handling is now done in the hook store with toast notifications
                             console.error('Failed to toggle mouse button hooks:', error);
                           }
                         }}
                         disabled={hookStore.state.isToggling || !hookStore.isConnected}
-                        class={`text-xs px-2 py-1 rounded border ${
+                        class={`text-xs px-2 py-1 rounded border focus-ring ${
                           hookStore.hookStatus?.mouse_button_hooks_enabled ? 
                           "border-green-500 text-green-400 bg-green-500/10" : 
                           "border-gray-500 text-gray-400 bg-gray-500/10"
                         } ${(hookStore.state.isToggling || !hookStore.isConnected) ? "opacity-50 cursor-not-allowed" : "hover:opacity-80"}`}
+                        aria-label={`Mouse button hooks are currently ${hookStore.hookStatus?.mouse_button_hooks_enabled ? "enabled" : "disabled"}. Click to ${hookStore.hookStatus?.mouse_button_hooks_enabled ? "disable" : "enable"}.`}
+                        aria-describedby="mouse-buttons-description"
+                        role="switch"
+                        aria-checked={hookStore.hookStatus?.mouse_button_hooks_enabled || false}
                       >
                         {hookStore.state.isToggling ? "..." : (
                           hookStore.hookStatus?.mouse_button_hooks_enabled ? "Enabled" : "Disabled"
@@ -201,7 +217,7 @@ function App() {
                       </button>
                     </div>
                   </div>
-                  <p class="text-sm text-gray-400">Block mouse buttons 3 & 4</p>
+                  <p class="text-sm text-gray-400" id="mouse-buttons-description">Block mouse buttons 3 & 4</p>
                 </div>
               </div>
             </div>
@@ -246,32 +262,52 @@ function App() {
               <h2 class="text-lg font-medium text-gray-100 mb-3">Dashboard</h2>
               <p class="text-sm text-gray-400 mb-6">Windows Events Inhibitor Overview</p>
               
+              {/* Real-time Monitoring Status */}
+              <div class="flex items-center gap-2 mb-4 text-sm">
+                <div class={`w-2 h-2 rounded-full ${
+                  hookStore.monitoring.isMonitoring() ? 'bg-green-500 animate-pulse' : 'bg-gray-500'
+                }`}></div>
+                <span class="text-gray-300">
+                  {hookStore.monitoring.isMonitoring() ? 'Real-time monitoring active' : 'Monitoring inactive'}
+                </span>
+                <span class="text-gray-500 text-xs">
+                  {hookStore.monitoring.isMonitoring() && 
+                    `(${hookStore.monitoring.currentPollInterval()}ms interval)`
+                  }
+                </span>
+              </div>
+
               {/* Statistics */}
               {hookStore.statistics && (
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                  <div class="p-3 bg-gray-800 rounded-lg">
+                <section 
+                  class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"
+                  aria-label="Application statistics"
+                  aria-live="polite"
+                  aria-atomic="false"
+                >
+                  <div class="p-3 bg-gray-800 rounded-lg" role="status" aria-label="Events blocked counter">
                     <div class="text-xs text-gray-400 mb-1">Events Blocked</div>
-                    <div class="text-lg font-semibold text-gray-100">{hookStore.formattedEventCount()}</div>
+                    <div class="text-lg font-semibold text-gray-100" aria-label={`${hookStore.formattedEventCount()} events blocked`}>{hookStore.formattedEventCount()}</div>
                   </div>
-                  <div class="p-3 bg-gray-800 rounded-lg">
+                  <div class="p-3 bg-gray-800 rounded-lg" role="status" aria-label="Application uptime">
                     <div class="text-xs text-gray-400 mb-1">Uptime</div>
-                    <div class="text-lg font-semibold text-gray-100">{hookStore.formattedUptime()}</div>
+                    <div class="text-lg font-semibold text-gray-100" aria-label={`Uptime: ${hookStore.formattedUptime()}`}>{hookStore.formattedUptime()}</div>
                   </div>
-                  <div class="p-3 bg-gray-800 rounded-lg">
+                  <div class="p-3 bg-gray-800 rounded-lg" role="status" aria-label="System health status">
                     <div class="text-xs text-gray-400 mb-1">Health</div>
                     <div class={`text-lg font-semibold ${
                       hookStore.getHookHealth() === 'healthy' ? 'text-green-400' :
                       hookStore.getHookHealth() === 'degraded' ? 'text-yellow-400' :
                       hookStore.getHookHealth() === 'critical' ? 'text-red-400' : 'text-gray-400'
-                    }`}>
+                    }`} aria-label={`System health: ${hookStore.getHookHealth()}`}>
                       {hookStore.getHookHealth().charAt(0).toUpperCase() + hookStore.getHookHealth().slice(1)}
                     </div>
                   </div>
-                  <div class="p-3 bg-gray-800 rounded-lg">
+                  <div class="p-3 bg-gray-800 rounded-lg" role="status" aria-label="Error count">
                     <div class="text-xs text-gray-400 mb-1">Errors</div>
-                    <div class="text-lg font-semibold text-gray-100">{hookStore.statistics.errorCount}</div>
+                    <div class="text-lg font-semibold text-gray-100" aria-label={`${hookStore.statistics.errorCount} errors occurred`}>{hookStore.statistics.errorCount}</div>
                   </div>
-                </div>
+                </section>
               )}
 
               {/* Quick Status */}
@@ -318,32 +354,38 @@ function App() {
               </div>
 
               {/* Quick Actions */}
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <button 
-                  class="btn-ghost text-left p-4 rounded-lg border border-gray-700 hover:border-blue-500/50"
-                  onClick={() => handleSectionChange("keyboard")}
-                >
-                  <div class="i-lucide-keyboard text-lg text-blue-500 mb-2"></div>
-                  <div class="text-sm font-medium text-gray-100">Windows Key</div>
-                  <div class="text-xs text-gray-400">Replace with F24</div>
-                </button>
-                <button 
-                  class="btn-ghost text-left p-4 rounded-lg border border-gray-700 hover:border-blue-500/50"
-                  onClick={() => handleSectionChange("mouse")}
-                >
-                  <div class="i-lucide-mouse text-lg text-purple-500 mb-2"></div>
-                  <div class="text-sm font-medium text-gray-100">Mouse Buttons</div>
-                  <div class="text-xs text-gray-400">Block extra buttons</div>
-                </button>
-                <button 
-                  class="btn-ghost text-left p-4 rounded-lg border border-gray-700 hover:border-blue-500/50"
-                  onClick={() => handleSectionChange("hotkeys")}
-                >
-                  <div class="i-lucide-settings text-lg text-yellow-500 mb-2"></div>
-                  <div class="text-sm font-medium text-gray-100">Toggle Hotkey</div>
-                  <div class="text-xs text-gray-400">Alt + Scroll Lock</div>
-                </button>
-              </div>
+              <section aria-label="Quick navigation actions">
+                <h3 class="sr-only">Quick navigation to configuration sections</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3" role="group">
+                  <button 
+                    class="btn-ghost text-left p-4 rounded-lg border border-gray-700 hover:border-blue-500/50 focus-ring"
+                    onClick={() => handleSectionChange("keyboard")}
+                    aria-label="Navigate to keyboard settings to configure Windows key replacement"
+                  >
+                    <div class="i-lucide-keyboard text-lg text-blue-500 mb-2" aria-hidden="true"></div>
+                    <div class="text-sm font-medium text-gray-100">Windows Key</div>
+                    <div class="text-xs text-gray-400">Replace with F24</div>
+                  </button>
+                  <button 
+                    class="btn-ghost text-left p-4 rounded-lg border border-gray-700 hover:border-blue-500/50 focus-ring"
+                    onClick={() => handleSectionChange("mouse")}
+                    aria-label="Navigate to mouse settings to configure extra button blocking"
+                  >
+                    <div class="i-lucide-mouse text-lg text-purple-500 mb-2" aria-hidden="true"></div>
+                    <div class="text-sm font-medium text-gray-100">Mouse Buttons</div>
+                    <div class="text-xs text-gray-400">Block extra buttons</div>
+                  </button>
+                  <button 
+                    class="btn-ghost text-left p-4 rounded-lg border border-gray-700 hover:border-blue-500/50 focus-ring"
+                    onClick={() => handleSectionChange("hotkeys")}
+                    aria-label="Navigate to hotkey settings to configure toggle shortcuts"
+                  >
+                    <div class="i-lucide-settings text-lg text-yellow-500 mb-2" aria-hidden="true"></div>
+                    <div class="text-sm font-medium text-gray-100">Toggle Hotkey</div>
+                    <div class="text-xs text-gray-400">Alt + Scroll Lock</div>
+                  </button>
+                </div>
+              </section>
             </div>
           </div>
         );
@@ -352,6 +394,38 @@ function App() {
 
   return (
     <div class="app-layout font-sans">
+      {/* Skip navigation links */}
+      <div>
+        <a 
+          href="#main-content" 
+          class="sr-only focus:not-sr-only focus:fixed focus:top-0 focus:left-0 focus:z-50 focus:bg-blue-600 focus:text-white focus:px-4 focus:py-2 focus:rounded focus-ring"
+          onClick={(e) => {
+            e.preventDefault();
+            const mainContent = document.getElementById('main-content');
+            if (mainContent) {
+              mainContent.focus();
+              mainContent.scrollIntoView({ behavior: 'smooth' });
+            }
+          }}
+        >
+          Skip to main content
+        </a>
+        <a 
+          href="#navigation" 
+          class="sr-only focus:not-sr-only focus:fixed focus:top-0 focus:left-40 focus:z-50 focus:bg-blue-600 focus:text-white focus:px-4 focus:py-2 focus:rounded focus-ring"
+          onClick={(e) => {
+            e.preventDefault();
+            const navigation = document.getElementById('navigation');
+            if (navigation) {
+              navigation.focus();
+              navigation.scrollIntoView({ behavior: 'smooth' });
+            }
+          }}
+        >
+          Skip to navigation
+        </a>
+      </div>
+      
       {/* Mobile Sidebar Overlay */}
       <div 
         class={`sidebar-overlay transition-opacity duration-300 ${
@@ -403,6 +477,9 @@ function App() {
         connectionStatus={hookStore.isConnected ? "connected" : "disconnected"}
         version="0.1.0"
       />
+      
+      {/* Toast Notifications */}
+      <ToastContainer />
     </div>
   );
 }

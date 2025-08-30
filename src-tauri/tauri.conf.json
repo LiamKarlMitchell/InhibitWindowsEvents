@@ -3,7 +3,6 @@
   "productName": "Windows Event Inhibitor",
   "version": "0.1.0",
   "identifier": "com.liam.inhibit-windows-events",
-  "description": "Low-level Windows hook system to suppress specific keyboard and mouse events",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:9833",

@@ -1,6 +1,8 @@
 import { createSignal, createMemo, createEffect, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { tauriService, type HookStatus, type TauriError, TauriErrorType } from '../services/tauri';
+import { useMonitoring, type MonitoringEvent, type MonitoringEventCallback } from '../services/monitoring-service';
+import { errorHandlingService, showSuccess, showConnectionStatus } from '../services/error-handling-service';
 
 /**
  * Hook Statistics Interface
@@ -67,12 +69,19 @@ class HookStore {
   private get state() { return this.storeResult[0]; }
   private get setState() { return this.storeResult[1]; }
   
-  // Polling interval for status updates
-  private statusInterval: number | null = null;
-  private readonly POLL_INTERVAL = 5000; // 5 seconds
+  // Monitoring service integration
+  private monitoring = useMonitoring({
+    pollInterval: 2000,
+    enableAdaptivePolling: true,
+    pauseOnMinimize: true
+  });
+  
+  // Rate limiting for error notifications
+  private lastErrorNotification = new Map<string, number>();
+  private errorNotificationCooldown = 5000; // 5 seconds
   
   private constructor() {
-    this.startStatusPolling();
+    this.setupMonitoringIntegration();
     this.setupServiceConnection();
   }
   
@@ -186,12 +195,19 @@ class HookStore {
     this.setInstalling(true);
     this.setError(null);
     
+    const progressToastId = errorHandlingService.showProgress('Installing Hooks');
+    
     try {
       const result = await tauriService.installHooks();
       console.log('Hooks installed:', result);
       await this.refreshStatus();
+      
+      errorHandlingService.hideProgress(progressToastId);
+      showSuccess('Install Hooks', 'Windows hooks installed successfully.');
     } catch (error) {
+      errorHandlingService.hideProgress(progressToastId);
       this.setError(error as TauriError);
+      await errorHandlingService.handleError(error as TauriError, 'Install Hooks');
       throw error;
     } finally {
       this.setInstalling(false);
@@ -202,12 +218,19 @@ class HookStore {
     this.setUninstalling(true);
     this.setError(null);
     
+    const progressToastId = errorHandlingService.showProgress('Uninstalling Hooks');
+    
     try {
       const result = await tauriService.uninstallHooks();
       console.log('Hooks uninstalled:', result);
       await this.refreshStatus();
+      
+      errorHandlingService.hideProgress(progressToastId);
+      showSuccess('Uninstall Hooks', 'Windows hooks uninstalled successfully.');
     } catch (error) {
+      errorHandlingService.hideProgress(progressToastId);
       this.setError(error as TauriError);
+      await errorHandlingService.handleError(error as TauriError, 'Uninstall Hooks');
       throw error;
     } finally {
       this.setUninstalling(false);
@@ -222,8 +245,11 @@ class HookStore {
       const result = await tauriService.toggleWindowsKeyHook();
       console.log('Windows key hook toggled:', result);
       await this.refreshStatus();
+      
+      showSuccess('Toggle Windows Key Hook', 'Windows key hook toggled successfully.');
     } catch (error) {
       this.setError(error as TauriError);
+      await errorHandlingService.handleError(error as TauriError, 'Toggle Windows Key Hook');
       throw error;
     } finally {
       this.setToggling(false);
@@ -238,8 +264,11 @@ class HookStore {
       const result = await tauriService.toggleMouseButtonHooks();
       console.log('Mouse button hooks toggled:', result);
       await this.refreshStatus();
+      
+      showSuccess('Toggle Mouse Button Hooks', 'Mouse button hooks toggled successfully.');
     } catch (error) {
       this.setError(error as TauriError);
+      await errorHandlingService.handleError(error as TauriError, 'Toggle Mouse Button Hooks');
       throw error;
     } finally {
       this.setToggling(false);
@@ -284,33 +313,75 @@ class HookStore {
     });
   }
   
-  // Start periodic status polling
-  private startStatusPolling(): void {
-    // Initial status check
-    this.refreshStatus();
+  // Setup monitoring service integration
+  private setupMonitoringIntegration(): void {
+    // Set up event listeners for monitoring service
+    this.monitoring.addEventListener('status_updated', this.handleStatusUpdate);
+    this.monitoring.addEventListener('connection_lost', this.handleConnectionLost);
+    this.monitoring.addEventListener('connection_restored', this.handleConnectionRestored);
+    this.monitoring.addEventListener('error_occurred', this.handleMonitoringError);
+    this.monitoring.addEventListener('activity_detected', this.handleActivityDetected);
     
-    // Setup polling interval
-    this.statusInterval = window.setInterval(() => {
-      if (this.state.isConnected && !this.state.isLoading) {
-        this.refreshStatus();
+    // Start monitoring
+    this.monitoring.start();
+    
+    // Update statistics periodically
+    const statsInterval = window.setInterval(() => {
+      if (this.state.isConnected) {
+        const stats = this.monitoring.getStatistics();
+        this.updateStatistics(stats);
       }
-    }, this.POLL_INTERVAL);
+    }, 1000); // Update statistics every second
     
     // Cleanup on component unmount
     onCleanup(() => {
-      if (this.statusInterval) {
-        window.clearInterval(this.statusInterval);
-        this.statusInterval = null;
-      }
+      this.monitoring.stop();
+      window.clearInterval(statsInterval);
     });
   }
   
+  // Event handlers for monitoring service
+  private handleStatusUpdate = (event: MonitoringEvent, status: HookStatus): void => {
+    this.updateHookStatus(status);
+  };
+  
+  private handleConnectionLost = (event: MonitoringEvent, error: TauriError): void => {
+    this.setConnectionStatus(false);
+    this.setError(error);
+    console.warn('Connection to backend lost:', error);
+    showConnectionStatus(false);
+  };
+  
+  private handleConnectionRestored = (event: MonitoringEvent, status: HookStatus): void => {
+    this.setConnectionStatus(true);
+    this.setError(null);
+    this.updateHookStatus(status);
+    console.log('Connection to backend restored');
+    showConnectionStatus(true);
+  };
+  
+  private handleMonitoringError = (event: MonitoringEvent, error: TauriError): void => {
+    this.setError(error);
+    
+    // Rate limit error notifications to prevent spam
+    const errorKey = `${error.type}-${error.message}`;
+    const now = Date.now();
+    const lastNotificationTime = this.lastErrorNotification.get(errorKey) || 0;
+    
+    // Only show notification if cooldown period has passed
+    if (now - lastNotificationTime > this.errorNotificationCooldown) {
+      this.lastErrorNotification.set(errorKey, now);
+      errorHandlingService.handleError(error, 'Status Monitoring');
+    }
+  };
+  
+  private handleActivityDetected = (event: MonitoringEvent, data: any): void => {
+    console.debug('Hook activity detected:', data);
+  };
+  
   // Manual cleanup method
   cleanup(): void {
-    if (this.statusInterval) {
-      window.clearInterval(this.statusInterval);
-      this.statusInterval = null;
-    }
+    this.monitoring.stop();
   }
 }
 
@@ -350,6 +421,22 @@ export function useHookStore() {
     // State setters
     setError: hookStore.setError.bind(hookStore),
     updateStatistics: hookStore.updateStatistics.bind(hookStore),
+    
+    // Monitoring service access
+    monitoring: {
+      isMonitoring: hookStore.monitoring.isMonitoring,
+      lastActivity: hookStore.monitoring.lastActivity,
+      currentPollInterval: hookStore.monitoring.currentPollInterval,
+      start: hookStore.monitoring.start,
+      stop: hookStore.monitoring.stop,
+      pause: hookStore.monitoring.pause,
+      resume: hookStore.monitoring.resume,
+      forceCheck: hookStore.monitoring.forceCheck,
+      getStatistics: hookStore.monitoring.getStatistics,
+      updateConfig: hookStore.monitoring.updateConfig,
+      addEventListener: hookStore.monitoring.addEventListener,
+      removeEventListener: hookStore.monitoring.removeEventListener,
+    },
   };
 }
 

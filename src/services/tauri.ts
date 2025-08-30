@@ -209,7 +209,7 @@ export async function withRetry<T>(
       
       // Calculate delay with exponential backoff
       const delay = retryConfig.delayMs * Math.pow(retryConfig.backoffMultiplier, attempt - 1);
-      console.warn(`Attempt ${attempt} failed for ${command}, retrying in ${delay}ms:`, error);
+      console.warn(`Attempt ${attempt}/${retryConfig.maxAttempts} failed for ${command}, retrying in ${delay}ms:`, error);
       await sleep(delay);
     }
   }

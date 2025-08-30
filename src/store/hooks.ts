@@ -41,7 +41,14 @@ export function useConfig() {
     },
     resetConfig: () => {
       configStore.resetConfig();
-    }
+    },
+    // Metadata and migration methods
+    isFirstRun: () => configStore.isFirstRun(),
+    getInstallationDate: () => configStore.getInstallationDate(),
+    getConfigVersion: () => configStore.getConfigVersion(),
+    needsMigration: () => configStore.needsMigration(),
+    getMigrationInfo: () => configStore.getMigrationInfo(),
+    forceMigration: () => configStore.forceMigration(),
   };
 }
 

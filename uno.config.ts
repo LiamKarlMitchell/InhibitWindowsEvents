@@ -89,11 +89,25 @@ export default defineConfig({
       }
     }],
     
-    // Custom focus ring
+    // Custom focus ring with better visibility
     ['focus-ring', {
       '&:focus': {
         outline: '2px solid #3b82f6',
-        'outline-offset': '2px'
+        'outline-offset': '2px',
+        'box-shadow': '0 0 0 4px rgba(59, 130, 246, 0.1)'
+      },
+      '&:focus:not(:focus-visible)': {
+        outline: 'none',
+        'box-shadow': 'none'
+      }
+    }],
+    
+    // High contrast focus for accessibility
+    ['focus-ring-high-contrast', {
+      '&:focus': {
+        outline: '3px solid #ffffff',
+        'outline-offset': '2px',
+        'box-shadow': '0 0 0 6px #000000'
       }
     }],
     
