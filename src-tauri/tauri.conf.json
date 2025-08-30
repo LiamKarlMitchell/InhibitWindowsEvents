@@ -1,18 +1,19 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "inhibit-windows-events",
+  "productName": "Windows Event Inhibitor",
   "version": "0.1.0",
   "identifier": "com.liam.inhibit-windows-events",
+  "description": "Low-level Windows hook system to suppress specific keyboard and mouse events",
   "build": {
     "beforeDevCommand": "pnpm dev",
-    "devUrl": "http://localhost:1420",
+    "devUrl": "http://localhost:9833",
     "beforeBuildCommand": "pnpm build",
     "frontendDist": "../dist"
   },
   "app": {
     "windows": [
       {
-        "title": "inhibit-windows-events",
+        "title": "Windows Event Inhibitor",
         "width": 800,
         "height": 600
       }
@@ -23,8 +24,7 @@
   },
   "plugins": {
     "fs": {
-      "all": true,
-      "scope": ["$APPLOCALDATA/*"]
+      "requireLiteralLeadingDot": false
     }
   },
   "bundle": {

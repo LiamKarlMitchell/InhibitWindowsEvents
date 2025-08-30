@@ -1,12 +1,13 @@
 import { defineConfig } from "vite";
 import solid from "vite-plugin-solid";
+import UnoCSS from "unocss/vite";
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
-  plugins: [solid()],
+  plugins: [solid(), UnoCSS()],
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
@@ -14,14 +15,14 @@ export default defineConfig(async () => ({
   clearScreen: false,
   // 2. tauri expects a fixed port, fail if that port is not available
   server: {
-    port: 1420,
+    port: 9833,
     strictPort: true,
-    host: host || false,
+    host: host || '0.0.0.0',
     hmr: host
       ? {
           protocol: "ws",
           host,
-          port: 1421,
+          port: 9834,
         }
       : undefined,
     watch: {

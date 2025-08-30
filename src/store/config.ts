@@ -4,6 +4,9 @@ import { BaseDirectory } from '@tauri-apps/plugin-fs';
 import solidReactivityAdapter from '@signaldb/solid';
 import { AppConfig, DEFAULT_CONFIG, CONFIG_SCHEMA } from './types';
 
+// Check if we're running in Tauri environment
+const isTauriEnvironment = typeof window !== 'undefined' && (window as any).__TAURI__ !== undefined;
+
 /**
  * SignalDB collection for application configuration
  * This provides reactive state management with persistent storage
@@ -13,16 +16,26 @@ export class ConfigStore {
   private static instance: ConfigStore;
 
   private constructor() {
-    // Initialize SignalDB collection with Tauri filesystem persistence
-    // Data will be stored in %APPDATA%/inhibit-windows-events/config.json on Windows
-    const adapter = createTauriFileSystemAdapter<AppConfig & { id: string }>('config.json', {
-      base_dir: BaseDirectory.AppLocalData,
-    });
+    if (isTauriEnvironment) {
+      // Initialize SignalDB collection with Tauri filesystem persistence
+      // Data will be stored in %APPDATA%/inhibit-windows-events/config.json on Windows
+      const adapter = createTauriFileSystemAdapter<AppConfig & { id: string }>('config.json', {
+        base_dir: BaseDirectory.AppLocalData,
+      });
 
-    this.collection = new Collection<AppConfig & { id: string }>({
-      persistence: adapter,
-      reactivity: solidReactivityAdapter,
-    });
+      this.collection = new Collection<AppConfig & { id: string }>({
+        persistence: adapter,
+        reactivity: solidReactivityAdapter,
+      });
+    } else {
+      // Development mode: use in-memory collection
+      this.collection = new Collection<AppConfig & { id: string }>({
+        reactivity: solidReactivityAdapter,
+      });
+      
+      // Initialize with default config in dev mode
+      this.collection.insert({ ...DEFAULT_CONFIG, id: 'default' });
+    }
   }
 
   /**

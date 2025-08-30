@@ -3,9 +3,14 @@ use windows::{
     core::*,
     Win32::Foundation::*,
     Win32::UI::WindowsAndMessaging::*,
-    Win32::System::Threading::*,
     Win32::UI::Input::KeyboardAndMouse::*,
+    Win32::System::LibraryLoader::GetModuleHandleW,
 };
+
+#[cfg(windows)]
+use winreg::enums::*;
+#[cfg(windows)]
+use winreg::RegKey;
 
 #[cfg(windows)]
 use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}};
@@ -31,6 +36,19 @@ pub enum HookError {
     NotInstalled,
     #[error("Message pump error: {0}")]
     MessagePump(String),
+}
+
+#[cfg(windows)]
+#[derive(Error, Debug)]
+pub enum StartupError {
+    #[error("Registry access denied - Administrator privileges may be required")]
+    AccessDenied,
+    #[error("Failed to access Windows registry: {0}")]
+    RegistryError(#[from] std::io::Error),
+    #[error("Failed to get current executable path")]
+    ExecutablePath,
+    #[error("Registry key not found")]
+    KeyNotFound,
 }
 
 #[cfg(windows)]
@@ -61,7 +79,7 @@ impl HookManager {
         }
     }
     
-    pub unsafe fn install_hooks(&self) -> Result<(), HookError> {
+    pub unsafe fn install_hooks(&self) -> std::result::Result<(), HookError> {
         // Check if hooks are already installed
         if self.mouse_hook.lock().unwrap().is_some() || self.keyboard_hook.lock().unwrap().is_some() {
             warn!("Attempted to install hooks when already installed");
@@ -74,26 +92,26 @@ impl HookManager {
         ENABLE_HOOKS.store(true, Ordering::Relaxed);
         
         // Get the current module instance
-        let h_instance = GetModuleHandleW(None)
+        let h_instance = unsafe { GetModuleHandleW(PCWSTR::null()) }
             .map_err(HookError::ModuleHandle)?;
         
         // Install mouse hook
-        let mouse_hook = SetWindowsHookExW(
+        let mouse_hook = unsafe { SetWindowsHookExW(
             WH_MOUSE_LL,
             Some(mouse_hook_proc),
             h_instance,
             0,
-        ).map_err(|source| HookError::InstallHook { source })?;
+        ) }.map_err(|source| HookError::InstallHook { source })?;
         
         debug!("Mouse hook installed with handle: {:?}", mouse_hook);
         
         // Install keyboard hook
-        let keyboard_hook = SetWindowsHookExW(
+        let keyboard_hook = unsafe { SetWindowsHookExW(
             WH_KEYBOARD_LL,
             Some(keyboard_hook_proc),
             h_instance,
             0,
-        ).map_err(|source| HookError::InstallHook { source })?;
+        ) }.map_err(|source| HookError::InstallHook { source })?;
         
         debug!("Keyboard hook installed with handle: {:?}", keyboard_hook);
         
@@ -111,7 +129,7 @@ impl HookManager {
         Ok(())
     }
     
-    fn start_message_pump(&self) -> Result<(), Box<dyn std::error::Error>> {
+    fn start_message_pump(&self) -> std::result::Result<(), Box<dyn std::error::Error>> {
         info!("Starting Windows message pump thread...");
         
         let (shutdown_tx, mut shutdown_rx) = mpsc::unbounded_channel();
@@ -129,7 +147,7 @@ impl HookManager {
                     }
                     
                     // Process messages with timeout
-                    let result = GetMessage(&mut msg, None, 0, 0);
+                    let result = GetMessageW(&mut msg, HWND(0), 0, 0);
                     if result == BOOL(0) {
                         // WM_QUIT
                         info!("Message pump received WM_QUIT");
@@ -155,7 +173,7 @@ impl HookManager {
         Ok(())
     }
     
-    pub unsafe fn uninstall_hooks(&self) -> Result<(), HookError> {
+    pub unsafe fn uninstall_hooks(&self) -> std::result::Result<(), HookError> {
         info!("Uninstalling Windows hooks...");
         
         // Check if hooks are installed
@@ -198,14 +216,14 @@ impl HookManager {
         // Uninstall mouse hook
         if let Some(hook) = self.mouse_hook.lock().unwrap().take() {
             debug!("Uninstalling mouse hook: {:?}", hook);
-            UnhookWindowsHookEx(hook)
+            unsafe { UnhookWindowsHookEx(hook) }
                 .map_err(|source| HookError::UninstallHook { source })?;
         }
         
         // Uninstall keyboard hook
         if let Some(hook) = self.keyboard_hook.lock().unwrap().take() {
             debug!("Uninstalling keyboard hook: {:?}", hook);
-            UnhookWindowsHookEx(hook)
+            unsafe { UnhookWindowsHookEx(hook) }
                 .map_err(|source| HookError::UninstallHook { source })?;
         }
         
@@ -307,7 +325,7 @@ unsafe extern "system" fn keyboard_hook_proc(
     
     // Handle Alt+Scroll Lock toggle (like C++ version)
     if vk_code == VK_SCROLL.0 as u32 
-        && (keyboard.flags & LLKHF_ALTDOWN.0) != 0 
+        && (keyboard.flags & LLKHF_ALTDOWN) != KBDLLHOOKSTRUCT_FLAGS(0) 
         && (w_param_u32 == WM_KEYUP || w_param_u32 == WM_SYSKEYUP) {
         
         let current_state = ENABLE_HOOKS.load(Ordering::Relaxed);
@@ -326,6 +344,137 @@ unsafe extern "system" fn keyboard_hook_proc(
     CallNextHookEx(None, n_code, w_param, l_param)
 }
 
+#[cfg(windows)]
+/// Add the application to Windows startup by creating a registry entry
+/// in HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run
+pub fn add_to_startup() -> std::result::Result<(), StartupError> {
+    info!("Adding application to Windows startup...");
+    
+    // Get the current executable path
+    let exe_path = std::env::current_exe()
+        .map_err(|e| {
+            error!("Failed to get current executable path: {}", e);
+            StartupError::ExecutablePath
+        })?;
+    
+    let exe_path_str = exe_path.to_string_lossy();
+    info!("Current executable path: {}", exe_path_str);
+    
+    // Open the Windows Run registry key
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    let run_key = hkcu.open_subkey_with_flags(
+        "Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+        KEY_SET_VALUE
+    ).map_err(|e| {
+        error!("Failed to open Run registry key: {}", e);
+        match e.kind() {
+            std::io::ErrorKind::PermissionDenied => StartupError::AccessDenied,
+            _ => StartupError::RegistryError(e),
+        }
+    })?;
+    
+    // Set the registry value with the application name and executable path
+    let app_name = "InhibitWindowsEvents";
+    run_key.set_value(app_name, &exe_path_str.to_string())
+        .map_err(|e| {
+            error!("Failed to set registry value for startup: {}", e);
+            match e.kind() {
+                std::io::ErrorKind::PermissionDenied => StartupError::AccessDenied,
+                _ => StartupError::RegistryError(e),
+            }
+        })?;
+    
+    info!("Successfully added '{}' to Windows startup with path: {}", app_name, exe_path_str);
+    Ok(())
+}
+
+#[cfg(windows)]
+/// Remove the application from Windows startup by deleting the registry entry
+/// in HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run
+pub fn remove_from_startup() -> std::result::Result<(), StartupError> {
+    info!("Removing application from Windows startup...");
+    
+    // Open the Windows Run registry key
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    let run_key = hkcu.open_subkey_with_flags(
+        "Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+        KEY_SET_VALUE
+    ).map_err(|e| {
+        error!("Failed to open Run registry key: {}", e);
+        match e.kind() {
+            std::io::ErrorKind::PermissionDenied => StartupError::AccessDenied,
+            std::io::ErrorKind::NotFound => StartupError::KeyNotFound,
+            _ => StartupError::RegistryError(e),
+        }
+    })?;
+    
+    // Delete the registry value
+    let app_name = "InhibitWindowsEvents";
+    match run_key.delete_value(app_name) {
+        Ok(_) => {
+            info!("Successfully removed '{}' from Windows startup", app_name);
+            Ok(())
+        }
+        Err(e) => {
+            match e.kind() {
+                std::io::ErrorKind::NotFound => {
+                    info!("Application '{}' was not found in startup entries", app_name);
+                    Ok(()) // Not an error - already removed
+                }
+                std::io::ErrorKind::PermissionDenied => {
+                    error!("Access denied when removing startup entry: {}", e);
+                    Err(StartupError::AccessDenied)
+                }
+                _ => {
+                    error!("Failed to remove startup entry: {}", e);
+                    Err(StartupError::RegistryError(e))
+                }
+            }
+        }
+    }
+}
+
+#[cfg(windows)]
+/// Check if the application is currently registered for Windows startup
+pub fn is_in_startup() -> std::result::Result<bool, StartupError> {
+    debug!("Checking if application is in Windows startup...");
+    
+    // Open the Windows Run registry key
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    let run_key = hkcu.open_subkey_with_flags(
+        "Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+        KEY_READ
+    ).map_err(|e| {
+        debug!("Failed to open Run registry key for reading: {}", e);
+        match e.kind() {
+            std::io::ErrorKind::PermissionDenied => StartupError::AccessDenied,
+            std::io::ErrorKind::NotFound => StartupError::KeyNotFound,
+            _ => StartupError::RegistryError(e),
+        }
+    })?;
+    
+    // Check if our application entry exists
+    let app_name = "InhibitWindowsEvents";
+    match run_key.get_value::<String, _>(app_name) {
+        Ok(path) => {
+            debug!("Found startup entry for '{}' with path: {}", app_name, path);
+            Ok(true)
+        }
+        Err(e) => {
+            match e.kind() {
+                std::io::ErrorKind::NotFound => {
+                    debug!("Application '{}' not found in startup entries", app_name);
+                    Ok(false)
+                }
+                _ => {
+                    error!("Error checking startup entry: {}", e);
+                    Err(StartupError::RegistryError(e))
+                }
+            }
+        }
+    }
+}
+
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -340,7 +489,7 @@ static HOOK_MANAGER: OnceLock<HookManager> = OnceLock::new();
 
 #[cfg(windows)]
 #[tauri::command]
-async fn install_hooks() -> Result<String, String> {
+async fn install_hooks() -> std::result::Result<String, String> {
     info!("Received install_hooks command");
     let manager = HOOK_MANAGER.get_or_init(|| HookManager::new());
     
@@ -364,7 +513,7 @@ async fn install_hooks() -> Result<String, String> {
 
 #[cfg(windows)]
 #[tauri::command]
-async fn uninstall_hooks() -> Result<String, String> {
+async fn uninstall_hooks() -> std::result::Result<String, String> {
     info!("Received uninstall_hooks command");
     if let Some(manager) = HOOK_MANAGER.get() {
         unsafe {
@@ -391,7 +540,7 @@ async fn uninstall_hooks() -> Result<String, String> {
 
 #[cfg(windows)]
 #[tauri::command]
-async fn toggle_windows_key_hook() -> Result<String, String> {
+async fn toggle_windows_key_hook() -> std::result::Result<String, String> {
     let current_state = ENABLE_WINDOWS_KEY_HOOK.load(Ordering::Relaxed);
     let new_state = !current_state;
     ENABLE_WINDOWS_KEY_HOOK.store(new_state, Ordering::Relaxed);
@@ -403,7 +552,7 @@ async fn toggle_windows_key_hook() -> Result<String, String> {
 
 #[cfg(windows)]
 #[tauri::command]
-async fn toggle_mouse_button_hooks() -> Result<String, String> {
+async fn toggle_mouse_button_hooks() -> std::result::Result<String, String> {
     let current_state = ENABLE_MOUSE_BUTTON_HOOKS.load(Ordering::Relaxed);
     let new_state = !current_state;
     ENABLE_MOUSE_BUTTON_HOOKS.store(new_state, Ordering::Relaxed);
@@ -415,7 +564,7 @@ async fn toggle_mouse_button_hooks() -> Result<String, String> {
 
 #[cfg(windows)]
 #[tauri::command]
-async fn get_hook_status() -> Result<serde_json::Value, String> {
+async fn get_hook_status() -> std::result::Result<serde_json::Value, String> {
     let hook_status = serde_json::json!({
         "overall_enabled": ENABLE_HOOKS.load(Ordering::Relaxed),
         "windows_key_enabled": ENABLE_WINDOWS_KEY_HOOK.load(Ordering::Relaxed),
@@ -427,6 +576,88 @@ async fn get_hook_status() -> Result<serde_json::Value, String> {
 }
 
 #[cfg(windows)]
+#[tauri::command]
+async fn add_to_windows_startup() -> std::result::Result<String, String> {
+    info!("Received add_to_windows_startup command");
+    
+    match add_to_startup() {
+        Ok(_) => {
+            info!("Successfully added application to Windows startup");
+            Ok("Application added to Windows startup successfully".to_string())
+        }
+        Err(StartupError::AccessDenied) => {
+            warn!("Access denied when adding to startup");
+            Err("Access denied. Administrator privileges may be required to modify startup settings.".to_string())
+        }
+        Err(StartupError::ExecutablePath) => {
+            error!("Could not determine executable path for startup");
+            Err("Failed to determine application path for startup registration.".to_string())
+        }
+        Err(e) => {
+            error!("Failed to add to startup: {}", e);
+            Err(format!("Failed to add to Windows startup: {}", e))
+        }
+    }
+}
+
+#[cfg(windows)]
+#[tauri::command]
+async fn remove_from_windows_startup() -> std::result::Result<String, String> {
+    info!("Received remove_from_windows_startup command");
+    
+    match remove_from_startup() {
+        Ok(_) => {
+            info!("Successfully removed application from Windows startup");
+            Ok("Application removed from Windows startup successfully".to_string())
+        }
+        Err(StartupError::AccessDenied) => {
+            warn!("Access denied when removing from startup");
+            Err("Access denied. Administrator privileges may be required to modify startup settings.".to_string())
+        }
+        Err(StartupError::KeyNotFound) => {
+            info!("Registry key not found when removing from startup");
+            Ok("Application was not found in startup entries (already removed)".to_string())
+        }
+        Err(e) => {
+            error!("Failed to remove from startup: {}", e);
+            Err(format!("Failed to remove from Windows startup: {}", e))
+        }
+    }
+}
+
+#[cfg(windows)]
+#[tauri::command]
+async fn check_startup_status() -> std::result::Result<serde_json::Value, String> {
+    debug!("Received check_startup_status command");
+    
+    match is_in_startup() {
+        Ok(is_enabled) => {
+            let status = serde_json::json!({
+                "enabled": is_enabled,
+                "status": if is_enabled { "Application is registered for Windows startup" } else { "Application is not registered for Windows startup" }
+            });
+            Ok(status)
+        }
+        Err(StartupError::AccessDenied) => {
+            warn!("Access denied when checking startup status");
+            Err("Access denied when checking startup status. Administrator privileges may be required.".to_string())
+        }
+        Err(StartupError::KeyNotFound) => {
+            debug!("Registry key not found when checking startup status");
+            let status = serde_json::json!({
+                "enabled": false,
+                "status": "Startup registry key not found (startup not available)"
+            });
+            Ok(status)
+        }
+        Err(e) => {
+            error!("Failed to check startup status: {}", e);
+            Err(format!("Failed to check startup status: {}", e))
+        }
+    }
+}
+
+#[cfg(windows)]
 fn get_dynamic_tooltip() -> String {
     let overall_enabled = ENABLE_HOOKS.load(Ordering::Relaxed);
     let windows_key_enabled = ENABLE_WINDOWS_KEY_HOOK.load(Ordering::Relaxed);
@@ -434,11 +665,11 @@ fn get_dynamic_tooltip() -> String {
     let hooks_installed = HOOK_MANAGER.get().is_some();
     
     if !hooks_installed {
-        return "Inhibit Windows Events - No hooks installed".to_string();
+        return "Windows Event Inhibitor - No hooks installed".to_string();
     }
     
     if !overall_enabled {
-        return "Inhibit Windows Events - All hooks disabled (Alt+ScrollLock to enable)".to_string();
+        return "Windows Event Inhibitor - All hooks disabled (Alt+ScrollLock to enable)".to_string();
     }
     
     let mut status_parts = Vec::new();
@@ -454,7 +685,7 @@ fn get_dynamic_tooltip() -> String {
         status_parts.push("Mouse Btns: OFF");
     }
     
-    format!("Inhibit Windows Events - {}", status_parts.join(", "))
+    format!("Windows Event Inhibitor - {}", status_parts.join(", "))
 }
 
 #[cfg(windows)]
@@ -507,12 +738,11 @@ pub fn run() {
 
                 // Create tray icon with dynamic tooltip
                 let initial_tooltip = get_dynamic_tooltip();
-                let tray = TrayIconBuilder::new()
-                    .id("main")
+                let _tray = TrayIconBuilder::with_id("main")
                     .tooltip(&initial_tooltip)
                     .icon(app.default_window_icon().unwrap().clone())
                     .menu(&menu)
-                    .menu_on_left_click(false)
+                    .show_menu_on_left_click(false)
                     .on_menu_event(move |app, event| match event.id().as_ref() {
                         "show_hide" => {
                             if let Some(window) = app.get_webview_window("main") {
@@ -594,11 +824,21 @@ pub fn run() {
                 uninstall_hooks, 
                 toggle_windows_key_hook, 
                 toggle_mouse_button_hooks, 
-                get_hook_status
+                get_hook_status,
+                add_to_windows_startup,
+                remove_from_windows_startup,
+                check_startup_status
             ])
             .on_window_event(|window, event| {
                 use tauri::WindowEvent;
                 match event {
+                    WindowEvent::CloseRequested { api, .. } => {
+                        info!("Window close requested, hiding window instead of closing");
+                        // Prevent the default close behavior
+                        api.prevent_close();
+                        // Hide the window instead of closing it
+                        let _ = window.hide();
+                    }
                     WindowEvent::Destroyed => {
                         info!("Window destroyed, cleaning up hooks...");
                         if let Some(manager) = HOOK_MANAGER.get() {

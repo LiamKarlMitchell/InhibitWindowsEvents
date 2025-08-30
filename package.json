@@ -1,19 +1,26 @@
 {
   "name": "inhibit-windows-events",
   "version": "0.1.0",
-  "description": "",
+  "description": "Low-level Windows hook system to suppress specific keyboard and mouse events",
   "type": "module",
   "scripts": {
     "start": "vite",
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "build:win": "pnpm tauri build --target x86_64-pc-windows-gnu",
+    "build:win:debug": "pnpm build && cd src-tauri && cargo build --target x86_64-pc-windows-gnu",
+    "dev:win": "pnpm tauri dev --target x86_64-pc-windows-gnu",
+    "dev:frontend": "vite --host 0.0.0.0",
+    "copy:win": "./scripts/copy-to-windows.sh",
+    "copy:win:debug": "./scripts/copy-to-windows.sh debug",
+    "dev:workflow": "pnpm build:win:debug && pnpm copy:win:debug && /mnt/g/WSL/win/inhibit-windows-events/inhibit-windows-events.exe",
+    "run:windows": "/mnt/g/WSL/win/inhibit-windows-events/inhibit-windows-events.exe"
   },
   "license": "MIT",
   "dependencies": {
     "@pitzzahh/signaldb-adapter-tauri": "^2.1.6",
-    "@playwright/test": "^1.55.0",
     "@signaldb/core": "^1.7.1",
     "@signaldb/fs": "^1.0.1",
     "@signaldb/solid": "^1.0.0",
@@ -23,8 +30,12 @@
     "solid-js": "^1.9.3"
   },
   "devDependencies": {
+    "@iconify-json/lucide": "^1.2.65",
     "@tauri-apps/cli": "^2",
+    "@unocss/preset-icons": "^66.4.2",
+    "@unocss/preset-uno": "^66.4.2",
     "typescript": "~5.6.2",
+    "unocss": "^66.4.2",
     "vite": "^6.0.3",
     "vite-plugin-solid": "^2.11.0"
   }

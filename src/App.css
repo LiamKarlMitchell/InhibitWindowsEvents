@@ -135,18 +135,20 @@ button {
 
 .install-btn:disabled,
 .uninstall-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
-  background-color: #6b7280;
-  border-color: #6b7280;
+  background-color: #4b5563;
+  border-color: #4b5563;
+  color: #9ca3af;
 }
 
 .status-message {
   margin: 0.5rem 0;
   padding: 0.5rem;
   border-radius: 4px;
-  background-color: #f3f4f6;
-  color: #374151;
+  background-color: var(--bg-tertiary, #252a35);
+  color: var(--text-secondary, #cbd5e1);
+  border: 1px solid var(--border, #374151);
   font-family: monospace;
   font-size: 0.9rem;
 }
