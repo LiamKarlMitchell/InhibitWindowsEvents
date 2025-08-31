@@ -28,6 +28,8 @@ export * from './utils';
 // Component exports - Reusable UI components
 export { default as Button } from './Button';
 export { default as Toggle } from './Toggle';
+export { default as Checkbox } from './Checkbox';
+export type { CheckboxProps } from './Checkbox';
 export { default as Card } from './Card';
 export { default as Input } from './Input';
 export { default as Modal, Dialog } from './Modal';

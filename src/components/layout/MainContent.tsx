@@ -11,7 +11,7 @@ function MainContent(props: MainContentProps) {
   return (
     <main 
       id="main-content"
-      class="flex-1 overflow-auto bg-gray-900"
+      class="flex-1 overflow-auto bg-gray-900 min-h-0"
       role="main"
       aria-labelledby="main-content-title"
       tabindex="-1"

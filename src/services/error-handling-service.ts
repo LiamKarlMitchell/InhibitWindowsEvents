@@ -40,12 +40,35 @@ export class ErrorHandlingService {
    * Handle errors with user-friendly feedback and recovery options
    */
   async handleError(error: TauriError, operation: string): Promise<void> {
-    console.error(`Error handling service - ${operation}:`, error);
+    // Enhanced error logging with structured data
+    console.error(`[ErrorHandlingService] ${operation}:`, {
+      error: error.message,
+      type: error.type,
+      code: error.code,
+      timestamp: new Date().toISOString(),
+      operation,
+      userAgent: navigator.userAgent,
+      stack: error.stack
+    });
     
     const userMessage = this.getUserFriendlyMessage(error);
     const recoveryActions = this.getRecoveryActions(error, operation);
     
     if (this.config.showToastNotifications) {
+      // Show both UI toast and tray notification for critical errors
+      if (error.type === TauriErrorType.HOOK_INSTALLATION_FAILED || 
+          error.type === TauriErrorType.PERMISSION_DENIED) {
+        try {
+          await tauriService.showTrayNotification(
+            'Error',
+            userMessage,
+            'error'
+          );
+        } catch (trayError) {
+          console.warn('[ErrorHandlingService] Failed to show tray notification:', trayError);
+        }
+      }
+      
       // Show toast notification with recovery actions
       toast.error(
         `${operation} Failed`,
@@ -148,11 +171,16 @@ export class ErrorHandlingService {
         actions.push({
           label: 'Restart App',
           action: async () => {
-            toast.warning(
-              'Application Restart',
-              'Please save your work and restart the application to resolve connectivity issues.',
-              { duration: 8000 }
-            );
+            try {
+              toast.info('Restarting...', 'Restarting the application to resolve connectivity issues.', { duration: 3000 });
+              await tauriService.restartApp();
+            } catch (restartError) {
+              toast.error(
+                'Restart Failed',
+                'Unable to restart automatically. Please restart the application manually.',
+                { duration: 8000 }
+              );
+            }
           }
         });
         break;

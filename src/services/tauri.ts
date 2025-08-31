@@ -343,6 +343,36 @@ export class TauriService {
       return result as StartupStatus;
     });
   }
+
+  /**
+   * Show a system tray notification
+   */
+  async showTrayNotification(
+    title: string,
+    message: string,
+    type: 'error' | 'warning' | 'info' | 'success' = 'info'
+  ): Promise<string> {
+    return withErrorHandling('show_tray_notification', async () => {
+      const result = await invoke<string>('show_tray_notification', {
+        title,
+        message,
+        notificationType: type,
+      });
+      this.setLastError(null);
+      return result;
+    });
+  }
+  
+  /**
+   * Restart the application
+   */
+  async restartApp(): Promise<string> {
+    return withErrorHandling('restart_app', async () => {
+      const result = await invoke<string>('restart_app');
+      this.setLastError(null);
+      return result;
+    });
+  }
   
   // Utility Methods
   async greet(name: string): Promise<string> {

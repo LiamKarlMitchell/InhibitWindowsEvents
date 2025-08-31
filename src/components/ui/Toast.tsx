@@ -186,7 +186,7 @@ function ToastItem(props: ToastItemProps) {
               class="flex-shrink-0 p-1 rounded hover:bg-white/10 transition-colors"
               aria-label="Close notification"
             >
-              <div class="i-lucide-x text-sm"></div>
+              <span class="i-lucide-x text-sm"></span>
             </button>
           </div>
           
@@ -228,18 +228,16 @@ export function ToastContainer() {
   
   return (
     <div
-      class="fixed top-4 right-4 z-50 space-y-2 max-w-sm w-full pointer-events-none"
+      class="fixed top-4 right-4 z-50 space-y-2 max-w-sm w-full"
       aria-live="polite"
       aria-label="Notifications"
     >
       <For each={toasts()}>
         {(toast) => (
-          <div class="pointer-events-auto">
-            <ToastItem
-              toast={toast}
-              onClose={(id) => toastStore.removeToast(id)}
-            />
-          </div>
+          <ToastItem
+            toast={toast}
+            onClose={(id) => toastStore.removeToast(id)}
+          />
         )}
       </For>
     </div>

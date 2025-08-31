@@ -229,4 +229,5 @@ const Toggle: Component<ToggleProps> = (props) => {
   );
 };
 
+export { Toggle };
 export default Toggle;

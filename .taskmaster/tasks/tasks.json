@@ -477,8 +477,51 @@
           3,
           6
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Setup Structured Logging Framework",
+            "description": "Configure logging infrastructure with log/tracing crate and output destinations",
+            "dependencies": [],
+            "details": "Install and configure the tracing crate with tracing-subscriber for structured logging. Set up multiple output targets including console, file rotation, and configurable log levels. Configure logging format with timestamps, module paths, and structured fields. Implement environment-based configuration (RUST_LOG) and file-based log rotation with size limits.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Add Comprehensive Windows API Error Handling",
+            "description": "Implement robust error handling for all Windows API calls and hook operations",
+            "dependencies": [
+              "10.1"
+            ],
+            "details": "Create custom error types for Windows API failures, hook installation errors, and system resource issues. Wrap all Windows API calls with proper error checking and context. Implement retry mechanisms for transient failures and graceful fallback strategies. Add detailed error logging with Windows error codes and human-readable descriptions.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement User-Friendly Error Notifications",
+            "description": "Create user feedback systems for errors in UI and system tray notifications",
+            "dependencies": [
+              "10.2"
+            ],
+            "details": "Implement toast notifications for critical errors using system tray balloon tips or Windows notifications API. Create error dialog components in the SolidJS frontend with actionable error messages. Add error state indicators to hook status cards and system tray tooltip updates. Implement error recovery suggestions and user guidance for common failure scenarios.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Add Debug Logging and Graceful Degradation",
+            "description": "Implement configurable debug logging for hook events and failure recovery mechanisms",
+            "dependencies": [
+              "10.1"
+            ],
+            "details": "Add configurable debug logging for hook events (keypress/mouse events) with privacy considerations and performance optimization. Implement graceful degradation when hooks fail to install - partial functionality modes and user notification of reduced capabilities. Add diagnostic information collection for troubleshooting and performance metrics logging for hook response times.",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
       },
       {
         "id": 11,
@@ -877,8 +920,66 @@
           14,
           15
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "in-progress",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create animation configuration and CSS classes",
+            "description": "Set up core animation configuration system and CSS classes for hover, active, and focus states using UnoCSS/Tailwind utilities",
+            "dependencies": [],
+            "details": "Create a central animation configuration file with timing functions, durations, and easing curves. Add CSS classes for hover states (scale 1.02x, brightness changes), active states (scale 0.98x), focus rings with theme colors. Configure prefers-reduced-motion media query support. Create utility classes for common animations like pulse, fade, scale, and transform effects.",
+            "status": "pending",
+            "testStrategy": "Test animation classes work correctly across different browsers, verify prefers-reduced-motion setting disables animations, validate timing and easing curves feel natural"
+          },
+          {
+            "id": 2,
+            "title": "Implement loading states with skeleton loaders",
+            "description": "Create skeleton loader components and integrate loading states throughout the application",
+            "dependencies": [
+              "19.1"
+            ],
+            "details": "Enhance existing LoadingSkeleton component in StatisticsDisplay to support different shapes and sizes. Create skeleton variants for cards, text blocks, buttons, and lists. Add shimmer animation effects. Implement loading overlays with spinners for async operations. Update all data-loading components (HookCard, StatisticsDisplay, etc.) to use consistent skeleton patterns.",
+            "status": "pending",
+            "testStrategy": "Test skeleton loaders display correctly during data loading, verify shimmer animations are smooth, confirm loading states handle different content shapes properly"
+          },
+          {
+            "id": 3,
+            "title": "Add micro-interactions to buttons and interactive elements",
+            "description": "Implement hover, active, and focus micro-interactions for all button and interactive components",
+            "dependencies": [
+              "19.1"
+            ],
+            "details": "Update Button component to include hover scale (1.02x), active scale (0.98x), and brightness changes. Add focus ring animations with theme colors and smooth transitions. Implement similar interactions for Toggle, Input, Modal close buttons, and other interactive elements. Ensure all transitions use consistent 150-250ms durations with appropriate easing curves.",
+            "status": "pending",
+            "testStrategy": "Test button interactions feel responsive and natural, verify focus rings are accessible and visible, confirm animations don't interfere with functionality"
+          },
+          {
+            "id": 4,
+            "title": "Implement smooth state transitions for cards and toggles",
+            "description": "Add smooth transition effects for component state changes including card hover effects and toggle animations",
+            "dependencies": [
+              "19.1",
+              "19.3"
+            ],
+            "details": "Enhance existing HookCard hover animations with improved shadow transitions and scale effects. Update Toggle component to use 200ms ease-out transitions for switch movement. Add card hover effects with shadow elevation changes. Implement smooth color transitions for status indicators (300ms with pulse animation). Update all state-dependent components to use consistent transition timing.",
+            "status": "pending",
+            "testStrategy": "Test card hover effects are smooth and visually appealing, verify toggle animations feel natural, confirm state transitions don't cause layout shifts"
+          },
+          {
+            "id": 5,
+            "title": "Optimize animations for accessibility and performance",
+            "description": "Ensure all animations respect accessibility preferences and perform at 60fps with proper fallbacks",
+            "dependencies": [
+              "19.1",
+              "19.2",
+              "19.3",
+              "19.4"
+            ],
+            "details": "Enhance existing prefers-reduced-motion support to completely disable animations when requested. Add will-change CSS properties for performance-critical animations. Implement proper cleanup for animation effects in SolidJS components. Add performance monitoring for animation frame rates. Create animation debugging utilities for development. Ensure all animations are GPU-accelerated where possible.",
+            "status": "pending",
+            "testStrategy": "Test animations run at 60fps on various devices, verify prefers-reduced-motion completely disables animations, confirm no memory leaks from animation cleanup, validate smooth performance under load"
+          }
+        ]
       },
       {
         "id": 20,
@@ -929,7 +1030,7 @@
     ],
     "metadata": {
       "created": "2025-08-29T14:13:05.157Z",
-      "updated": "2025-08-30T21:53:01.938Z",
+      "updated": "2025-08-30T22:14:15.507Z",
       "description": "Tasks for master context"
     }
   }

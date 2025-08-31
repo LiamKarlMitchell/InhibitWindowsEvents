@@ -1,0 +1,635 @@
+/**
+ * Animation Configuration and Micro-interactions
+ * Comprehensive animation system for the Windows Event Inhibitor application
+ */
+
+/* Animation Configuration Variables */
+:root {
+  /* Timing Functions (based on Material Design and modern best practices) */
+  --ease-linear: linear;
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-sharp: cubic-bezier(0.4, 0, 0.6, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* Duration System (based on Material Design Motion) */
+  --duration-instant: 0ms;
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-medium: 300ms;
+  --duration-slow: 500ms;
+  --duration-slowest: 700ms;
+
+  /* Animation Scales for micro-interactions */
+  --scale-hover: 1.02;
+  --scale-active: 0.98;
+  --scale-press: 0.95;
+  --scale-focus: 1.05;
+
+  /* Opacity levels for states */
+  --opacity-disabled: 0.5;
+  --opacity-loading: 0.7;
+  --opacity-hover: 0.8;
+  --opacity-muted: 0.6;
+
+  /* Transform origins */
+  --origin-center: center;
+  --origin-top: top;
+  --origin-bottom: bottom;
+  --origin-left: left;
+  --origin-right: right;
+}
+
+/* Reduced Motion Override */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-medium: 0ms;
+    --duration-slow: 0ms;
+    --duration-slowest: 0ms;
+    --scale-hover: 1;
+    --scale-active: 1;
+    --scale-press: 1;
+    --scale-focus: 1;
+  }
+
+  /* Override all animations and transitions */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Core Animation Classes */
+
+/* Hover States */
+.animate-hover {
+  transition: transform var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) var(--ease-out),
+              opacity var(--duration-fast) var(--ease-out);
+}
+
+.animate-hover:hover {
+  transform: scale(var(--scale-hover));
+}
+
+.animate-hover-lift {
+  transition: transform var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) var(--ease-out);
+}
+
+.animate-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Active/Press States */
+.animate-press {
+  transition: transform var(--duration-fast) var(--ease-sharp);
+}
+
+.animate-press:active {
+  transform: scale(var(--scale-active));
+}
+
+/* Focus States with Enhanced Visibility */
+.animate-focus {
+  transition: outline-color var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out),
+              transform var(--duration-fast) var(--ease-out);
+}
+
+.animate-focus:focus-visible {
+  transform: scale(var(--scale-focus));
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+
+/* Loading States */
+@keyframes pulse-gentle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: var(--opacity-loading);
+  }
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-pulse-gentle {
+  animation: pulse-gentle 2s var(--ease-in-out) infinite;
+}
+
+.animate-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 25%,
+    var(--bg-tertiary) 50%,
+    var(--bg-secondary) 75%
+  );
+  background-size: 200px 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+.animate-spin {
+  animation: spinner var(--duration-slowest) var(--ease-linear) infinite;
+}
+
+/* State Transitions */
+.transition-colors {
+  transition: background-color var(--duration-normal) var(--ease-out),
+              border-color var(--duration-normal) var(--ease-out),
+              color var(--duration-normal) var(--ease-out);
+}
+
+.transition-transform {
+  transition: transform var(--duration-normal) var(--ease-out);
+}
+
+.transition-opacity {
+  transition: opacity var(--duration-normal) var(--ease-out);
+}
+
+.transition-shadow {
+  transition: box-shadow var(--duration-normal) var(--ease-out);
+}
+
+.transition-all {
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+/* Enhanced Interactive Element Animations */
+.interactive-element {
+  transition: all var(--duration-normal) var(--ease-out);
+  cursor: pointer;
+  user-select: none;
+}
+
+.interactive-element:hover {
+  transform: scale(var(--scale-hover));
+  filter: brightness(1.1);
+}
+
+.interactive-element:active {
+  transform: scale(var(--scale-active));
+  transition-duration: var(--duration-fast);
+}
+
+.interactive-element:focus-visible {
+  transform: scale(var(--scale-focus));
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+
+.interactive-element:disabled {
+  opacity: var(--opacity-disabled);
+  cursor: not-allowed;
+  transform: none !important;
+  filter: none !important;
+}
+
+/* Card Animations */
+.card-interactive {
+  transition: transform var(--duration-medium) var(--ease-out),
+              box-shadow var(--duration-medium) var(--ease-out),
+              border-color var(--duration-normal) var(--ease-out);
+}
+
+.card-interactive:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-accent);
+}
+
+/* Toggle Animations */
+.toggle-switch {
+  transition: background-color var(--duration-normal) var(--ease-out);
+}
+
+.toggle-switch .toggle-thumb {
+  transition: transform var(--duration-normal) var(--ease-spring),
+              background-color var(--duration-normal) var(--ease-out);
+}
+
+.toggle-switch.active .toggle-thumb {
+  transform: translateX(100%);
+}
+
+/* Status Indicator Animations */
+.status-indicator {
+  transition: color var(--duration-medium) var(--ease-out),
+              background-color var(--duration-medium) var(--ease-out),
+              box-shadow var(--duration-medium) var(--ease-out);
+}
+
+.status-indicator.pulse {
+  animation: status-pulse 2s var(--ease-in-out) infinite;
+}
+
+@keyframes status-pulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 0 4px transparent;
+  }
+}
+
+.status-indicator.active {
+  box-shadow: 0 0 8px var(--color-success-500);
+}
+
+.status-indicator.warning {
+  box-shadow: 0 0 8px var(--color-warning-500);
+}
+
+.status-indicator.error {
+  box-shadow: 0 0 8px var(--color-error-500);
+}
+
+/* Button Enhancement Animations */
+.btn-enhanced {
+  position: relative;
+  overflow: hidden;
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.btn-enhanced::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transition: left var(--duration-medium) var(--ease-out);
+}
+
+.btn-enhanced:hover::before {
+  left: 100%;
+}
+
+.btn-enhanced:hover {
+  transform: scale(var(--scale-hover));
+  box-shadow: var(--shadow-md);
+}
+
+.btn-enhanced:active {
+  transform: scale(var(--scale-active));
+  transition-duration: var(--duration-fast);
+}
+
+/* Form Input Animations */
+.input-enhanced {
+  transition: border-color var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) var(--ease-out),
+              background-color var(--duration-fast) var(--ease-out);
+}
+
+.input-enhanced:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1),
+              0 0 8px rgba(59, 130, 246, 0.2);
+}
+
+.input-enhanced:hover:not(:focus) {
+  border-color: var(--border-secondary);
+}
+
+/* Modal and Dialog Animations */
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modal-exit {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+}
+
+@keyframes backdrop-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-backdrop {
+  animation: backdrop-enter var(--duration-medium) var(--ease-out);
+}
+
+.modal-content {
+  animation: modal-enter var(--duration-medium) var(--ease-emphasized);
+}
+
+.modal-content.exiting {
+  animation: modal-exit var(--duration-normal) var(--ease-sharp);
+}
+
+/* Toast Animations */
+@keyframes toast-enter-right {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes toast-exit-right {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+.toast-enter {
+  animation: toast-enter-right var(--duration-medium) var(--ease-emphasized);
+}
+
+.toast-exit {
+  animation: toast-exit-right var(--duration-normal) var(--ease-sharp);
+}
+
+/* Progress and Loading Indicators */
+@keyframes progress-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.progress-indeterminate::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--accent-primary),
+    transparent
+  );
+  animation: progress-indeterminate 1.5s var(--ease-in-out) infinite;
+}
+
+/* Stagger Animation Utilities */
+.stagger-children > * {
+  animation: slideInUp var(--duration-medium) var(--ease-out) both;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 250ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 300ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 350ms; }
+
+/* Micro-interaction Classes */
+
+/* Button micro-interactions */
+.btn-micro {
+  position: relative;
+  transform-origin: var(--origin-center);
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.btn-micro:hover {
+  transform: scale(var(--scale-hover));
+  filter: brightness(1.1);
+}
+
+.btn-micro:active {
+  transform: scale(var(--scale-active));
+  transition-duration: var(--duration-fast);
+}
+
+.btn-micro:focus-visible {
+  box-shadow: 0 0 0 2px var(--bg-primary),
+              0 0 0 4px var(--accent-primary);
+}
+
+/* Card micro-interactions */
+.card-micro {
+  transition: all var(--duration-medium) var(--ease-out);
+}
+
+.card-micro:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Toggle micro-interactions */
+.toggle-micro {
+  transition: background-color var(--duration-normal) var(--ease-out);
+}
+
+.toggle-micro .toggle-handle {
+  transition: transform var(--duration-normal) var(--ease-spring),
+              box-shadow var(--duration-normal) var(--ease-out);
+}
+
+.toggle-micro:hover .toggle-handle {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.toggle-micro.active .toggle-handle {
+  transform: translateX(100%);
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+}
+
+/* Input micro-interactions */
+.input-micro {
+  transition: border-color var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) var(--ease-out),
+              background-color var(--duration-fast) var(--ease-out);
+}
+
+.input-micro:hover:not(:focus) {
+  border-color: var(--border-secondary);
+}
+
+.input-micro:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Status indicator micro-interactions */
+.status-micro {
+  transition: all var(--duration-medium) var(--ease-out);
+}
+
+.status-micro.active {
+  animation: status-pulse 2s var(--ease-in-out) infinite;
+}
+
+.status-micro.changing {
+  animation: status-change var(--duration-slow) var(--ease-bounce) once;
+}
+
+@keyframes status-change {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.2); }
+  50% { transform: scale(0.9); }
+  75% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* Layout Animation Utilities */
+.layout-fade-in {
+  animation: fadeIn var(--duration-medium) var(--ease-out);
+}
+
+.layout-slide-in-up {
+  animation: slideInUp var(--duration-medium) var(--ease-emphasized);
+}
+
+.layout-slide-in-down {
+  animation: slideInDown var(--duration-medium) var(--ease-emphasized);
+}
+
+/* Performance Optimized Transforms */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-auto {
+  will-change: auto;
+}
+
+/* Utility Classes for Common Patterns */
+
+/* Scale utilities */
+.scale-0 { transform: scale(0); }
+.scale-50 { transform: scale(0.5); }
+.scale-75 { transform: scale(0.75); }
+.scale-90 { transform: scale(0.9); }
+.scale-95 { transform: scale(0.95); }
+.scale-100 { transform: scale(1); }
+.scale-105 { transform: scale(1.05); }
+.scale-110 { transform: scale(1.1); }
+.scale-125 { transform: scale(1.25); }
+
+/* Rotation utilities */
+.rotate-0 { transform: rotate(0deg); }
+.rotate-45 { transform: rotate(45deg); }
+.rotate-90 { transform: rotate(90deg); }
+.rotate-180 { transform: rotate(180deg); }
+.rotate-270 { transform: rotate(270deg); }
+
+/* Translation utilities */
+.translate-x-0 { transform: translateX(0); }
+.translate-x-1 { transform: translateX(0.25rem); }
+.translate-x-2 { transform: translateX(0.5rem); }
+.translate-x-4 { transform: translateX(1rem); }
+.translate-y-0 { transform: translateY(0); }
+.translate-y-1 { transform: translateY(0.25rem); }
+.translate-y-2 { transform: translateY(0.5rem); }
+.translate-y-4 { transform: translateY(1rem); }
+
+/* Combined Animation Classes for Common UI Patterns */
+
+/* Complete button animation */
+.btn-complete {
+  @apply animate-hover animate-press animate-focus btn-micro;
+}
+
+/* Complete card animation */
+.card-complete {
+  @apply animate-hover card-micro transition-shadow;
+}
+
+/* Complete input animation */
+.input-complete {
+  @apply input-micro transition-colors;
+}
+
+/* Complete toggle animation */
+.toggle-complete {
+  @apply toggle-micro transition-colors;
+}
+
+/* Accessibility Enhancements */
+
+/* High contrast focus for better accessibility */
+@media (prefers-contrast: high) {
+  .animate-focus:focus-visible {
+    outline: 3px solid var(--text-primary);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 6px var(--bg-primary);
+  }
+}
+
+/* Force color adjust for Windows high contrast mode */
+@media (forced-colors: active) {
+  .interactive-element {
+    forced-color-adjust: auto;
+  }
+  
+  .animate-focus:focus-visible {
+    outline: 2px solid CanvasText;
+    box-shadow: none;
+  }
+}

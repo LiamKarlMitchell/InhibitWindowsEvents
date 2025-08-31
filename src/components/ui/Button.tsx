@@ -169,4 +169,5 @@ const Button: Component<ButtonProps> = (props) => {
   );
 };
 
+export { Button };
 export default Button;

@@ -19,7 +19,13 @@ use tokio::sync::mpsc;
 #[cfg(windows)]
 use log::{info, warn, error, debug};
 #[cfg(windows)]
+use tracing::{info as tracing_info, warn as tracing_warn, error as tracing_error, debug as tracing_debug};
+#[cfg(windows)]
 use thiserror::Error;
+
+// Logging module
+mod logging;
+pub use logging::*;
 
 #[cfg(windows)]
 #[derive(Error, Debug)]
@@ -80,20 +86,38 @@ impl HookManager {
     }
     
     pub unsafe fn install_hooks(&self) -> std::result::Result<(), HookError> {
+        let start_time = std::time::Instant::now();
+        
         // Check if hooks are already installed
         if self.mouse_hook.lock().unwrap().is_some() || self.keyboard_hook.lock().unwrap().is_some() {
-            warn!("Attempted to install hooks when already installed");
+            tracing_warn!(
+                operation = "install_hooks",
+                reason = "already_installed",
+                "Attempted to install hooks when already installed"
+            );
             return Err(HookError::AlreadyInstalled);
         }
         
-        info!("Installing Windows hooks...");
+        tracing_info!(
+            operation = "install_hooks",
+            "Installing Windows hooks..."
+        );
         
         // Enable hooks
         ENABLE_HOOKS.store(true, Ordering::Relaxed);
         
         // Get the current module instance
         let h_instance = unsafe { GetModuleHandleW(PCWSTR::null()) }
-            .map_err(HookError::ModuleHandle)?;
+            .map_err(|e| {
+                log_windows_error!("GetModuleHandleW", e);
+                HookError::ModuleHandle(e)
+            })?;
+        
+        tracing_debug!(
+            operation = "install_hooks",
+            module_handle = ?h_instance,
+            "Module handle obtained"
+        );
         
         // Install mouse hook
         let mouse_hook = unsafe { SetWindowsHookExW(
@@ -101,9 +125,17 @@ impl HookManager {
             Some(mouse_hook_proc),
             h_instance,
             0,
-        ) }.map_err(|source| HookError::InstallHook { source })?;
+        ) }.map_err(|source| {
+            log_windows_error!("SetWindowsHookExW_Mouse", source, hook_type = "WH_MOUSE_LL");
+            HookError::InstallHook { source }
+        })?;
         
-        debug!("Mouse hook installed with handle: {:?}", mouse_hook);
+        tracing_debug!(
+            operation = "install_hooks",
+            hook_type = "mouse",
+            handle = ?mouse_hook,
+            "Mouse hook installed successfully"
+        );
         
         // Install keyboard hook
         let keyboard_hook = unsafe { SetWindowsHookExW(
@@ -111,9 +143,17 @@ impl HookManager {
             Some(keyboard_hook_proc),
             h_instance,
             0,
-        ) }.map_err(|source| HookError::InstallHook { source })?;
+        ) }.map_err(|source| {
+            log_windows_error!("SetWindowsHookExW_Keyboard", source, hook_type = "WH_KEYBOARD_LL");
+            HookError::InstallHook { source }
+        })?;
         
-        debug!("Keyboard hook installed with handle: {:?}", keyboard_hook);
+        tracing_debug!(
+            operation = "install_hooks",
+            hook_type = "keyboard", 
+            handle = ?keyboard_hook,
+            "Keyboard hook installed successfully"
+        );
         
         // Store hook handles
         *self.mouse_hook.lock().unwrap() = Some(mouse_hook);
@@ -121,11 +161,22 @@ impl HookManager {
         
         // Start message pump in background thread
         self.start_message_pump().map_err(|e| {
-            error!("Failed to start message pump: {}", e);
+            tracing_error!(
+                operation = "install_hooks",
+                error = %e,
+                "Failed to start message pump"
+            );
             HookError::MessagePump(e.to_string())
         })?;
         
-        info!("Hooks installed successfully");
+        let duration = start_time.elapsed();
+        log_performance!("install_hooks", duration.as_millis() as f64);
+        
+        tracing_info!(
+            operation = "install_hooks",
+            duration_ms = duration.as_millis(),
+            "Hooks installed successfully"
+        );
         Ok(())
     }
     
@@ -174,40 +225,69 @@ impl HookManager {
     }
     
     pub unsafe fn uninstall_hooks(&self) -> std::result::Result<(), HookError> {
-        info!("Uninstalling Windows hooks...");
+        let start_time = std::time::Instant::now();
+        
+        tracing_info!(
+            operation = "uninstall_hooks",
+            "Uninstalling Windows hooks..."
+        );
         
         // Check if hooks are installed
         let has_mouse_hook = self.mouse_hook.lock().unwrap().is_some();
         let has_keyboard_hook = self.keyboard_hook.lock().unwrap().is_some();
         
         if !has_mouse_hook && !has_keyboard_hook {
-            warn!("Attempted to uninstall hooks when none are installed");
+            tracing_warn!(
+                operation = "uninstall_hooks",
+                reason = "not_installed",
+                "Attempted to uninstall hooks when none are installed"
+            );
             return Err(HookError::NotInstalled);
         }
         
         // Disable hooks first
         ENABLE_HOOKS.store(false, Ordering::Relaxed);
-        debug!("Hooks disabled");
+        tracing_debug!(
+            operation = "uninstall_hooks",
+            "Hooks disabled, beginning cleanup process"
+        );
         
         // Signal message pump to shutdown
         if let Some(shutdown_tx) = self.shutdown_sender.lock().unwrap().take() {
-            info!("Signaling message pump to shutdown");
+            tracing_debug!(
+                operation = "uninstall_hooks",
+                "Signaling message pump to shutdown"
+            );
             if let Err(e) = shutdown_tx.send(()) {
-                warn!("Failed to send shutdown signal to message pump: {:?}", e);
+                tracing_warn!(
+                    operation = "uninstall_hooks",
+                    error = ?e,
+                    "Failed to send shutdown signal to message pump"
+                );
             }
         }
         
         // Wait for message pump to finish (with timeout)
         if let Some(handle) = self.message_pump_handle.lock().unwrap().take() {
-            debug!("Waiting for message pump thread to finish...");
+            tracing_debug!(
+                operation = "uninstall_hooks",
+                "Waiting for message pump thread to finish..."
+            );
             tokio::task::block_in_place(move || {
                 futures::executor::block_on(async {
                     match tokio::time::timeout(
                         std::time::Duration::from_secs(2),
                         handle
                     ).await {
-                        Ok(_) => debug!("Message pump thread finished gracefully"),
-                        Err(_) => warn!("Message pump thread did not finish within timeout"),
+                        Ok(_) => tracing_debug!(
+                            operation = "uninstall_hooks",
+                            "Message pump thread finished gracefully"
+                        ),
+                        Err(_) => tracing_warn!(
+                            operation = "uninstall_hooks",
+                            timeout_sec = 2,
+                            "Message pump thread did not finish within timeout"
+                        ),
                     }
                 });
             });
@@ -215,19 +295,42 @@ impl HookManager {
         
         // Uninstall mouse hook
         if let Some(hook) = self.mouse_hook.lock().unwrap().take() {
-            debug!("Uninstalling mouse hook: {:?}", hook);
+            tracing_debug!(
+                operation = "uninstall_hooks",
+                hook_type = "mouse",
+                handle = ?hook,
+                "Uninstalling mouse hook"
+            );
             unsafe { UnhookWindowsHookEx(hook) }
-                .map_err(|source| HookError::UninstallHook { source })?;
+                .map_err(|source| {
+                    log_windows_error!("UnhookWindowsHookEx_Mouse", source, hook_type = "mouse");
+                    HookError::UninstallHook { source }
+                })?;
         }
         
         // Uninstall keyboard hook
         if let Some(hook) = self.keyboard_hook.lock().unwrap().take() {
-            debug!("Uninstalling keyboard hook: {:?}", hook);
+            tracing_debug!(
+                operation = "uninstall_hooks",
+                hook_type = "keyboard",
+                handle = ?hook,
+                "Uninstalling keyboard hook"
+            );
             unsafe { UnhookWindowsHookEx(hook) }
-                .map_err(|source| HookError::UninstallHook { source })?;
+                .map_err(|source| {
+                    log_windows_error!("UnhookWindowsHookEx_Keyboard", source, hook_type = "keyboard");
+                    HookError::UninstallHook { source }
+                })?;
         }
         
-        info!("Hooks uninstalled successfully");
+        let duration = start_time.elapsed();
+        log_performance!("uninstall_hooks", duration.as_millis() as f64);
+        
+        tracing_info!(
+            operation = "uninstall_hooks",
+            duration_ms = duration.as_millis(),
+            "Hooks uninstalled successfully"
+        );
         Ok(())
     }
 }
@@ -267,10 +370,19 @@ unsafe extern "system" fn mouse_hook_proc(
             
             // Validate l_param is not null
             if l_param.0 != 0 {
-                debug!("Suppressing extra mouse button: wParam={:X}", w_param.0);
+                log_hook_event!(
+                    "mouse_button_suppressed",
+                    button_message = format!("{:X}", w_param.0),
+                    hook_enabled = true
+                );
                 return LRESULT(1);
             } else {
-                warn!("Received mouse hook with null lParam");
+                tracing_warn!(
+                    target = "hook_events",
+                    event_type = "mouse_hook_invalid",
+                    w_param = w_param.0,
+                    "Received mouse hook with null lParam"
+                );
             }
         }
         _ => {
@@ -309,15 +421,31 @@ unsafe extern "system" fn keyboard_hook_proc(
         && ENABLE_WINDOWS_KEY_HOOK.load(Ordering::Relaxed) {
         match w_param_u32 {
             WM_KEYDOWN | WM_SYSKEYDOWN => {
-                debug!("Suppressing VK_LWIN key down, replacing with F24");
+                log_hook_event!(
+                    "windows_key_suppressed",
+                    key_event = "down",
+                    replacement_key = "F24",
+                    vk_code = vk_code
+                );
                 keybd_event(VK_F24.0 as u8, 0, KEYBD_EVENT_FLAGS(0), 0);
             }
             WM_KEYUP | WM_SYSKEYUP => {
-                debug!("Suppressing VK_LWIN key up, replacing with F24");
+                log_hook_event!(
+                    "windows_key_suppressed", 
+                    key_event = "up",
+                    replacement_key = "F24",
+                    vk_code = vk_code
+                );
                 keybd_event(VK_F24.0 as u8, 0, KEYEVENTF_KEYUP, 0);
             }
             _ => {
-                debug!("Unhandled Windows key message: {:X}", w_param_u32);
+                tracing_debug!(
+                    target = "hook_events",
+                    event_type = "windows_key_unhandled",
+                    w_param = w_param_u32,
+                    vk_code = vk_code,
+                    "Unhandled Windows key message"
+                );
             }
         }
         return LRESULT(1);
@@ -490,22 +618,85 @@ static HOOK_MANAGER: OnceLock<HookManager> = OnceLock::new();
 #[cfg(windows)]
 #[tauri::command]
 async fn install_hooks() -> std::result::Result<String, String> {
-    info!("Received install_hooks command");
-    let manager = HOOK_MANAGER.get_or_init(|| HookManager::new());
+    tracing_info!(
+        operation = "install_hooks_command",
+        "Received install_hooks command"
+    );
+    
+    let manager = HOOK_MANAGER.get_or_init(|| {
+        tracing_debug!(
+            operation = "install_hooks_command",
+            "Initializing new HookManager instance"
+        );
+        HookManager::new()
+    });
     
     unsafe {
         match manager.install_hooks() {
             Ok(_) => {
-                info!("Hooks installed successfully via Tauri command");
+                tracing_info!(
+                    operation = "install_hooks_command",
+                    success = true,
+                    "Hooks installed successfully via Tauri command"
+                );
                 Ok("Hooks installed successfully".to_string())
             }
             Err(HookError::AlreadyInstalled) => {
-                warn!("Hooks already installed");
+                tracing_debug!(
+                    operation = "install_hooks_command",
+                    warning = "already_installed",
+                    "Hooks already installed, continuing normally"
+                );
                 Ok("Hooks are already installed".to_string())
             }
             Err(e) => {
-                error!("Failed to install hooks: {}", e);
-                Err(format!("Failed to install hooks: {}", e))
+                tracing_error!(
+                    operation = "install_hooks_command",
+                    error = %e,
+                    error_type = ?e,
+                    "Failed to install hooks"
+                );
+                
+                // Graceful degradation: Provide specific guidance based on error type
+                let graceful_guidance = match e {
+                    HookError::PermissionDenied => {
+                        tracing_warn!(
+                            operation = "install_hooks_command",
+                            degradation_mode = "permission_denied",
+                            suggestion = "run_as_administrator",
+                            "Hook installation failed due to permissions"
+                        );
+                        " Try running the application as Administrator."
+                    },
+                    HookError::InstallHook { .. } => {
+                        tracing_warn!(
+                            operation = "install_hooks_command",
+                            degradation_mode = "windows_api_failure",
+                            suggestion = "system_restart_or_wait",
+                            "Windows API hook installation failed"
+                        );
+                        " System may be busy with other hook applications. Try restarting the application or waiting a moment."
+                    },
+                    HookError::MessagePump(_) => {
+                        tracing_warn!(
+                            operation = "install_hooks_command",
+                            degradation_mode = "message_pump_failure",
+                            suggestion = "resource_constraint",
+                            "Message pump failed to start"
+                        );
+                        " System resources may be constrained. Close other applications and try again."
+                    },
+                    _ => {
+                        tracing_warn!(
+                            operation = "install_hooks_command",
+                            degradation_mode = "unknown_error",
+                            "Unhandled error type in hook installation"
+                        );
+                        " Check system compatibility and application logs."
+                    }
+                };
+                
+                Err(format!("Failed to install hooks: {}.{}", e, graceful_guidance))
             }
         }
     }
@@ -514,26 +705,51 @@ async fn install_hooks() -> std::result::Result<String, String> {
 #[cfg(windows)]
 #[tauri::command]
 async fn uninstall_hooks() -> std::result::Result<String, String> {
-    info!("Received uninstall_hooks command");
+    tracing_info!(
+        operation = "uninstall_hooks_command",
+        "Received uninstall_hooks command"
+    );
+    
     if let Some(manager) = HOOK_MANAGER.get() {
         unsafe {
             match manager.uninstall_hooks() {
                 Ok(_) => {
-                    info!("Hooks uninstalled successfully via Tauri command");
+                    tracing_info!(
+                        operation = "uninstall_hooks_command",
+                        success = true,
+                        "Hooks uninstalled successfully via Tauri command"
+                    );
                     Ok("Hooks uninstalled successfully".to_string())
                 }
                 Err(HookError::NotInstalled) => {
-                    warn!("No hooks to uninstall");
+                    tracing_debug!(
+                        operation = "uninstall_hooks_command",
+                        warning = "not_installed", 
+                        "No hooks to uninstall"
+                    );
                     Ok("No hooks are currently installed".to_string())
                 }
                 Err(e) => {
-                    error!("Failed to uninstall hooks: {}", e);
-                    Err(format!("Failed to uninstall hooks: {}", e))
+                    tracing_error!(
+                        operation = "uninstall_hooks_command",
+                        error = %e,
+                        error_type = ?e,
+                        "Failed to uninstall hooks"
+                    );
+                    
+                    // Graceful degradation guidance
+                    let graceful_guidance = " The application can continue running, but you may need to restart to fully clean up system hooks.";
+                    
+                    Err(format!("Failed to uninstall hooks: {}.{}", e, graceful_guidance))
                 }
             }
         }
     } else {
-        warn!("Hook manager not initialized");
+        tracing_debug!(
+            operation = "uninstall_hooks_command",
+            degradation_mode = "manager_not_initialized",
+            "Hook manager not initialized - no hooks to uninstall"
+        );
         Ok("Hook manager not initialized".to_string())
     }
 }
@@ -573,6 +789,59 @@ async fn get_hook_status() -> std::result::Result<serde_json::Value, String> {
     });
     
     Ok(hook_status)
+}
+
+/// Show a system tray notification for errors or important status updates
+#[tauri::command]
+pub async fn show_tray_notification(
+    app_handle: tauri::AppHandle,
+    title: String,
+    message: String,
+    notification_type: String, // "error", "warning", "info", "success"
+) -> Result<String, String> {
+    tracing_info!(
+        operation = "show_tray_notification",
+        notification_type = %notification_type,
+        title = %title,
+        "Showing tray notification"
+    );
+
+    #[cfg(windows)]
+    {
+        // Update tray tooltip with notification context
+        if let Some(tray) = app_handle.tray_by_id("main") {
+            let notification_tooltip = format!("{}: {}", title, message);
+            
+            // Temporarily update tooltip to show notification
+            if let Err(e) = tray.set_tooltip(Some(&notification_tooltip)) {
+                tracing_error!(
+                    operation = "show_tray_notification",
+                    error = %e,
+                    "Failed to update tray tooltip for notification"
+                );
+                return Err(format!("Failed to update tray tooltip: {}", e));
+            }
+            
+            // Reset tooltip after 5 seconds
+            let app_handle_clone = app_handle.clone();
+            tokio::spawn(async move {
+                tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+                update_tray_tooltip(&app_handle_clone);
+            });
+        }
+
+        Ok(format!("Tray notification shown: {} - {}", title, message))
+    }
+
+    #[cfg(not(windows))]
+    {
+        tracing_warn!(
+            operation = "show_tray_notification",
+            platform = "non-windows",
+            "Tray notifications not supported on this platform"
+        );
+        Err("Tray notifications only supported on Windows".to_string())
+    }
 }
 
 #[cfg(windows)]
@@ -657,6 +926,29 @@ async fn check_startup_status() -> std::result::Result<serde_json::Value, String
     }
 }
 
+/// Restart the application
+#[tauri::command]
+async fn restart_app(app_handle: tauri::AppHandle) -> std::result::Result<String, String> {
+    tracing::info!("Received restart_app command");
+    
+    // Clean up hooks before restarting
+    if let Some(manager) = HOOK_MANAGER.get() {
+        unsafe {
+            if let Err(e) = manager.uninstall_hooks() {
+                tracing::warn!("Failed to clean up hooks before restart: {}", e);
+            } else {
+                tracing::info!("Hooks cleaned up successfully before restart");
+            }
+        }
+    }
+    
+    // Restart the application
+    match app_handle.restart() {
+        Ok(_) => Ok("Application restarting...".to_string()),
+        Err(e) => Err(format!("Failed to restart application: {}", e))
+    }
+}
+
 #[cfg(windows)]
 fn get_dynamic_tooltip() -> String {
     let overall_enabled = ENABLE_HOOKS.load(Ordering::Relaxed);
@@ -702,6 +994,14 @@ fn update_tray_tooltip(app_handle: &tauri::AppHandle) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Initialize structured logging
+    if let Err(e) = init_dev_logging() {
+        eprintln!("Failed to initialize logging: {}", e);
+        // Continue without structured logging - fallback to println!
+    } else {
+        log_startup_info();
+    }
+
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
@@ -827,7 +1127,9 @@ pub fn run() {
                 get_hook_status,
                 add_to_windows_startup,
                 remove_from_windows_startup,
-                check_startup_status
+                check_startup_status,
+                show_tray_notification,
+                restart_app
             ])
             .on_window_event(|window, event| {
                 use tauri::WindowEvent;
